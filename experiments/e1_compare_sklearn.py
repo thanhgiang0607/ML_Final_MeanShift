@@ -1,6 +1,5 @@
 from __future__ import annotations
 import argparse
-import hashlib
 import json
 import platform
 import sys
@@ -22,9 +21,9 @@ from threadpoolctl import threadpool_limits
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from meanshift import MeanShiftCustom  
-from meanshift.bandwidth import estimate_bandwidth  
-from common import DATASETS, load_synthetic, out_dir, synthetic_path  
+from meanshift import MeanShiftCustom
+from meanshift.bandwidth import estimate_bandwidth
+from common import DATASETS, SUBSAMPLE, load_real, load_real_2d, out_dir, pca_2d
 
 OUT = out_dir("e1")
 ALPHAS = [0.25, 0.5, 1.0]
@@ -52,80 +51,87 @@ def _center_metrics(a, b, bandwidth):
             "center_error_max_penalized_over_h": float(max(distances.max() if len(distances) else 0.0, bandwidth if unmatched else 0.0) / bandwidth)}
 
 
+def _timed_fit(factory, X):
+    started = time.perf_counter()
+    try:
+        model = factory().fit(X)
+    except ValueError as exc:
+        return None, time.perf_counter() - started, str(exc)
+    return model, time.perf_counter() - started, ""
+
+
 def run(seeds=10):
     if seeds <= 0:
         raise ValueError("--seeds phải là số nguyên dương")
-    rows, example_cache, hashes = [], {}, {}
+    rows, example_cache = [], {}
     with threadpool_limits(limits=1):
         for dataset in DATASETS:
             for seed in range(seeds):
-                path = synthetic_path(dataset, seed)
-                X, truth = load_synthetic(dataset, seed)
-                hashes[str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
+                X, truth = load_real(dataset, seed)
                 base_h = estimate_bandwidth(X, quantile=0.3)
                 if not np.isfinite(base_h) or base_h <= 0:
-                    raise ValueError(f"Bandwidth ước lượng không hợp lệ trong {path}: {base_h}")
+                    raise ValueError(f"Bandwidth ước lượng không hợp lệ ({dataset}, seed {seed}): {base_h}")
                 for alpha in ALPHAS:
                     h = float(alpha * base_h)
                     for bin_seeding in (False, True):
-                        seed_started = time.perf_counter()
-                        custom = MeanShiftCustom(bandwidth=h, bin_seeding=bin_seeding,
-                            neighbor_search="brute", cluster_all=True).fit(X)
-                        custom_elapsed = time.perf_counter() - seed_started
-                        ref_started = time.perf_counter()
-                        reference = MeanShift(bandwidth=h, bin_seeding=bin_seeding,
-                            cluster_all=True, n_jobs=1).fit(X)
-                        reference_elapsed = time.perf_counter() - ref_started
+                        reference, reference_elapsed, ref_error = _timed_fit(lambda: MeanShift(
+                            bandwidth=h, bin_seeding=bin_seeding, cluster_all=True, n_jobs=1), X)
                         for search in SEARCHES:
-                            if search == "kdtree":
-                                started = time.perf_counter()
-                                model = MeanShiftCustom(bandwidth=h, bin_seeding=bin_seeding,
-                                    neighbor_search=search, cluster_all=True).fit(X)
-                                elapsed = time.perf_counter() - started
-                            else:
-                                model, elapsed = custom, custom_elapsed
-                            ari = float(adjusted_rand_score(model.labels_, reference.labels_))
-                            centers = _center_metrics(model.cluster_centers_, reference.cluster_centers_, h)
-                            row = {"dataset": dataset, "seed": seed, "alpha": alpha,
+                            model, elapsed, custom_error = _timed_fit(lambda: MeanShiftCustom(
+                                bandwidth=h, bin_seeding=bin_seeding, neighbor_search=search, cluster_all=True), X)
+                            base = {"dataset": dataset, "seed": seed, "alpha": alpha,
                                 "base_bandwidth": base_h, "bandwidth": h,
                                 "bin_seeding": bin_seeding, "neighbor_search": search,
+                                "custom_fit_seconds": elapsed, "sklearn_fit_seconds": reference_elapsed,
+                                "custom_error": custom_error, "sklearn_error": ref_error}
+                            if model is None or reference is None:
+                                both = model is None and reference is None
+                                rows.append({**base, "outcome": "both_error" if both else "one_error",
+                                    "cluster_count_equal": both, "labels_exact_equal": both})
+                                continue
+                            ari = float(adjusted_rand_score(model.labels_, reference.labels_))
+                            centers = _center_metrics(model.cluster_centers_, reference.cluster_centers_, h)
+                            row = {**base, "outcome": "ok",
                                 "custom_n_clusters": len(model.cluster_centers_),
                                 "sklearn_n_clusters": len(reference.cluster_centers_),
                                 "cluster_count_equal": len(model.cluster_centers_) == len(reference.cluster_centers_),
                                 "ari_custom_vs_sklearn": ari,
                                 "labels_exact_equal": bool(np.array_equal(model.labels_, reference.labels_)),
                                 "custom_n_iter": int(model.n_iter_), "sklearn_n_iter": int(reference.n_iter_),
-                                "custom_fit_seconds": elapsed,
-                                "sklearn_fit_seconds": reference_elapsed,
                                 "custom_truth_ari": float(adjusted_rand_score(truth, model.labels_)),
                                 "sklearn_truth_ari": float(adjusted_rand_score(truth, reference.labels_)),
                                 **centers}
                             rows.append(row)
-                            if seed == 0 and alpha == 0.5 and not bin_seeding:
+                            if seed == 0 and alpha == 1.0 and not bin_seeding:
                                 example_cache[(dataset, search)] = (X, truth, model, reference)
                 pd.DataFrame(rows).to_csv(OUT / "e1_partial_runs.csv", index=False)
                 print(f"[{dataset}] seed {seed + 1}/{seeds} complete", flush=True)
     runs = pd.DataFrame(rows)
     runs.to_csv(OUT / "e1_runs.csv", index=False)
     keys = ["dataset", "alpha", "bin_seeding", "neighbor_search"]
+    runs["both_error"] = runs["outcome"] == "both_error"
     summary = runs.groupby(keys, as_index=False).agg(
-        runs=("seed", "count"), cluster_count_equal_rate=("cluster_count_equal", "mean"),
+        runs=("seed", "count"), both_error_runs=("both_error", "sum"), cluster_count_equal_rate=("cluster_count_equal", "mean"),
         labels_exact_equal_rate=("labels_exact_equal", "mean"), ari_min=("ari_custom_vs_sklearn", "min"),
         ari_mean=("ari_custom_vs_sklearn", "mean"), center_error_max_over_h=("center_error_max_over_h", "max"),
         center_error_mean_over_h=("center_error_mean_over_h", "mean"),
         custom_truth_ari_mean=("custom_truth_ari", "mean"), sklearn_truth_ari_mean=("sklearn_truth_ari", "mean"),
         custom_seconds_mean=("custom_fit_seconds", "mean"), sklearn_seconds_mean=("sklearn_fit_seconds", "mean"))
     summary.to_csv(OUT / "e1_summary.csv", index=False)
-    runs["comparison_mismatch"] = (~runs["labels_exact_equal"] | ~runs["cluster_count_equal"] |
+    ok = runs["outcome"] == "ok"
+    runs["comparison_mismatch"] = (runs["outcome"] == "one_error") | (ok & (
+        ~runs["labels_exact_equal"].astype(bool) | ~runs["cluster_count_equal"].astype(bool) |
         (runs["center_error_max_over_h"].fillna(np.inf) > 1e-10) |
-        (runs["custom_n_iter"] != runs["sklearn_n_iter"]))
+        (runs["custom_n_iter"] != runs["sklearn_n_iter"])))
     runs.to_csv(OUT / "e1_runs.csv", index=False)
     mismatch = runs.loc[runs["comparison_mismatch"]].copy()
     mismatch.to_csv(OUT / "e1_mismatches.csv", index=False)
 
-    fig, axes = plt.subplots(5, 2, figsize=(12, 23), constrained_layout=True)
+    fig, axes = plt.subplots(len(DATASETS), 2, figsize=(12, 5 * len(DATASETS)), constrained_layout=True)
     for i, dataset in enumerate(DATASETS):
         X, truth, model, reference = example_cache[(dataset, "kdtree")]
+        pca = pca_2d(X)
+        P = pca.transform(X)
         cost = np.linalg.norm(model.cluster_centers_[:, None] - reference.cluster_centers_[None, :], axis=2)
         rr, cc = linear_sum_assignment(cost)
         mapping = dict(zip(rr, cc))
@@ -134,40 +140,42 @@ def run(seeds=10):
             labels = estimator.labels_
             for k in np.unique(labels):
                 color_index = mapping.get(k, len(reference.cluster_centers_) + k) if j == 0 else k
-                ax.scatter(*X[labels == k].T, s=5, color=plt.get_cmap("tab20")(int(color_index) % 20), alpha=.65)
-            ax.scatter(*estimator.cluster_centers_.T, marker="x", s=55, c="black", linewidths=1.5)
-            ax.set_title(f"{dataset} — {title} (seed 0, α=.5)")
+                ax.scatter(*P[labels == k].T, s=8, color=plt.get_cmap("tab20")(int(color_index) % 20), alpha=.7)
+            ax.scatter(*pca.transform(estimator.cluster_centers_).T, marker="x", s=60, c="black", linewidths=1.5)
+            ax.set_title(f"{dataset} — {title} (toàn bộ dữ liệu, α = 1, {len(estimator.cluster_centers_)} cụm)\nchiếu PCA 2D")
             ax.set_xticks([]); ax.set_yticks([])
     fig.savefig(OUT / "e1_examples.png", dpi=160)
     plt.close(fig)
 
-    X, _ = load_synthetic("blobs", 0)
+    X, _ = load_real_2d("iris")
     h_diag = 0.5 * estimate_bandwidth(X, quantile=0.3)
     gx, gy = np.meshgrid(np.linspace(X[:, 0].min()-0.5, X[:, 0].max()+0.5, 100),
                          np.linspace(X[:, 1].min()-0.5, X[:, 1].max()+0.5, 100))
     grid = np.column_stack([gx.ravel(), gy.ravel()])
     density = np.exp(KernelDensity(kernel="gaussian", bandwidth=h_diag).fit(X).score_samples(grid)).reshape(gx.shape)
+    all_paths = MeanShiftCustom(bandwidth=h_diag, record_trajectories=True).fit(X).trajectories_
+    start = int(np.argmax([len(t) for t in all_paths]))
     diagnostic = MeanShiftCustom(bandwidth=h_diag, kernel="gaussian", gaussian_cutoff=3.0,
-        seeds=X[[0]], record_trajectories=True).fit(X)
+        seeds=X[[start]], record_trajectories=True).fit(X)
     trajectory = diagnostic.trajectories_[0]
     fig, ax = plt.subplots(figsize=(9, 7), constrained_layout=True)
     ax.contourf(gx, gy, density, levels=24, cmap="magma", alpha=.78)
     ax.scatter(*X.T, s=5, c="white", alpha=.32, label="samples")
     ax.plot(trajectory[:, 0], trajectory[:, 1], "c.-", label="truncated Gaussian shift (cutoff=3h)")
-    ax.set_title("Full Gaussian KDE vs finite-cutoff Gaussian trajectory")
+    ax.set_title("Iris (PCA 2D): KDE Gauss đầy đủ và quỹ đạo Gauss cắt ở 3h")
     ax.legend(loc="best")
     fig.savefig(OUT / "e1_kde_trajectory.png", dpi=160)
     plt.close(fig)
     kde = KernelDensity(kernel="gaussian", bandwidth=h_diag).fit(X)
     trajectory_rows = []
     for kernel in ("flat", "gaussian"):
-        fitted = MeanShiftCustom(bandwidth=h_diag, kernel=kernel, seeds=X[[0]], record_trajectories=True).fit(X)
+        fitted = MeanShiftCustom(bandwidth=h_diag, kernel=kernel, seeds=X[[start]], record_trajectories=True).fit(X)
         for step, point in enumerate(fitted.trajectories_[0]):
             u = np.sum((X - point) ** 2, axis=1) / h_diag**2
             full_gaussian = np.exp(-0.5 * u).mean() / (2 * np.pi * h_diag**2)
             epanechnikov = 2 * np.maximum(1 - u, 0).mean() / (np.pi * h_diag**2)
             reference_density = float(np.exp(kde.score_samples(point[None]))[0])
-            trajectory_rows.append({"kernel": kernel, "step": step, "x": point[0], "y": point[1],
+            trajectory_rows.append({"kernel": kernel, "start_index": start, "step": step, "x": point[0], "y": point[1],
                 "gaussian_kde_direct": full_gaussian, "gaussian_kde_sklearn": reference_density,
                 "epanechnikov_kde": epanechnikov})
     trajectory_frame = pd.DataFrame(trajectory_rows)
@@ -186,7 +194,9 @@ def run(seeds=10):
 
     metadata = {"experiment": "E1 custom vs sklearn MeanShift", "seeds": list(range(seeds)),
         "datasets": DATASETS, "alphas": ALPHAS, "bin_seeding": [False, True],
-        "neighbor_search": SEARCHES, "rows": len(runs), "input_sha256": hashes,
+        "neighbor_search": SEARCHES, "rows": len(runs),
+        "data": f"sklearn.datasets (Iris, Wine, Breast Cancer), StandardScaler, đủ số chiều; seed 0 = toàn bộ dữ liệu, seed ≥ 1 = mẫu con phân tầng {SUBSAMPLE:.0%}",
+        "diagnostic_data": "Iris chuẩn hoá rồi chiếu PCA 2D (cho hình KDE và mật độ theo bước)",
         "versions": {"python": platform.python_version(), "numpy": np.__version__,
             "pandas": pd.__version__, "scipy": scipy.__version__, "scikit_learn": sklearn.__version__},
         "config": {"bandwidth": "alpha * estimate_bandwidth(X, quantile=0.3)", "quantile": 0.3,
@@ -196,10 +206,12 @@ def run(seeds=10):
             "sklearn_n_jobs": 1, "threadpool_limit": 1, "reference_fits_reused_across_search": True,
             "time_note": "Each custom backend fit once; sklearn reference fit once and reused across backend comparisons"},
         "metric_caveats": {"center_error": "Hungarian matched-pair Euclidean errors normalized by h; unmatched center counts are reported separately and receive no arbitrary distance penalty.",
-            "truth_ari": "ARI against supplied synthetic labels; flat-kernel MeanShift need not recover nonconvex ground-truth partitions.",
+            "truth_ari": "ARI so với nhãn lớp thật; lớp thật không nhất thiết trùng với mode mật độ.",
             "timing": "Single-process wall-clock; sensitive to machine load.",
             "KDE": "Plotted surface is full-support Gaussian KDE; custom Gaussian trajectory truncates neighbors at 3h. Flat updates are uniform-ball/Epanechnikov gradient weights, not Gaussian KDE. No monotonic-density claim is made for truncated Gaussian updates."}}
     (OUT / "e1_metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    print(f"Cả hai cùng báo lỗi (không seed nào có láng giềng): {int(runs.both_error.sum())}/{len(runs)}; "
+          f"chỉ một bên lỗi: {int((runs.outcome == 'one_error').sum())}")
     count_equal = runs["cluster_count_equal"].mean() * 100
     exact = runs["labels_exact_equal"].mean() * 100
     print(f"Cùng số cụm: {count_equal:.1f}%; nhãn giống hệt: {exact:.1f}%; ARI nhỏ nhất: {runs.ari_custom_vs_sklearn.min():.6f}; lệch tâm lớn nhất/h: {runs.center_error_max_over_h.max():.6f}")

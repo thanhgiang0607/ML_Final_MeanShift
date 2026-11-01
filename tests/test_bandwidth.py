@@ -1,21 +1,24 @@
-from pathlib import Path
 
 import numpy as np
 import pytest
 from sklearn.cluster import estimate_bandwidth as sk_estimate_bandwidth
 from sklearn.datasets import make_blobs
+from sklearn.datasets import load_breast_cancer, load_iris, load_wine
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 from meanshift.bandwidth import estimate_bandwidth
 
-SYNTHETIC = Path(__file__).resolve().parents[1] / "data" / "synthetic"
-NAMES = ["blobs", "blobs_varied", "blobs_aniso", "moons", "circles"]
+NAMES = ["iris", "wine", "breast_cancer"]
+LOADERS = {"iris": load_iris, "wine": load_wine, "breast_cancer": load_breast_cancer}
 
 
-def load_synthetic(name, seed):
-    path = SYNTHETIC / f"{name}_seed{seed}.csv"
-    if not path.exists():
-        pytest.skip("Chưa có dữ liệu: chạy `python3 data/make_synthetic.py`")
-    return np.loadtxt(path, delimiter=",", skiprows=1)[:, :2]
+def load_real(name, seed):
+    data = LOADERS[name]()
+    X, y = data.data, data.target
+    if seed > 0:
+        X, _, y, _ = train_test_split(X, y, train_size=0.8, stratify=y, random_state=seed)
+    return StandardScaler().fit_transform(X)
 
 
 @pytest.mark.parametrize("quantile", [0.1, 0.3, 0.5])
@@ -127,23 +130,23 @@ def test_list_input_equals_array_input():
 
 @pytest.mark.parametrize("seed", range(10))
 @pytest.mark.parametrize("name", NAMES)
-def test_synthetic_matches_sklearn(name, seed):
-    X = load_synthetic(name, seed)
+def test_real_matches_sklearn(name, seed):
+    X = load_real(name, seed)
     assert estimate_bandwidth(X) == pytest.approx(sk_estimate_bandwidth(X))
 
 
 @pytest.mark.parametrize("quantile", [0.1, 0.3, 0.5])
 @pytest.mark.parametrize("name", NAMES)
-def test_synthetic_quantiles_match_sklearn(name, quantile):
-    X = load_synthetic(name, 0)
+def test_real_quantiles_match_sklearn(name, quantile):
+    X = load_real(name, 0)
     assert estimate_bandwidth(X, quantile=quantile) == pytest.approx(
         sk_estimate_bandwidth(X, quantile=quantile)
     )
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_synthetic_subsample_matches_sklearn(name):
-    X = load_synthetic(name, 0)
+def test_real_subsample_matches_sklearn(name):
+    X = load_real(name, 0)
     assert estimate_bandwidth(X, n_samples=300, random_state=1) == pytest.approx(
         sk_estimate_bandwidth(X, n_samples=300, random_state=1)
     )

@@ -1,27 +1,32 @@
 import warnings
-from pathlib import Path
 
 import numpy as np
 import pytest
 from sklearn.cluster import estimate_bandwidth as sk_estimate_bandwidth
 from sklearn.cluster import get_bin_seeds as sk_get_bin_seeds
 from sklearn.datasets import make_blobs
+from sklearn.datasets import load_breast_cancer, load_iris, load_wine
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 from meanshift.seeding import get_bin_seeds
 
-SYNTHETIC = Path(__file__).resolve().parents[1] / "data" / "synthetic"
-NAMES = ["blobs", "blobs_varied", "blobs_aniso", "moons", "circles"]
 
 
 def sort_rows(a):
     return a[np.lexsort(a.T[::-1])]
 
 
-def load_synthetic(name, seed):
-    path = SYNTHETIC / f"{name}_seed{seed}.csv"
-    if not path.exists():
-        pytest.skip("Chưa có dữ liệu: chạy `python3 data/make_synthetic.py`")
-    return np.loadtxt(path, delimiter=",", skiprows=1)[:, :2]
+NAMES = ["iris", "wine", "breast_cancer"]
+LOADERS = {"iris": load_iris, "wine": load_wine, "breast_cancer": load_breast_cancer}
+
+
+def load_real(name, seed):
+    data = LOADERS[name]()
+    X, y = data.data, data.target
+    if seed > 0:
+        X, _, y, _ = train_test_split(X, y, train_size=0.8, stratify=y, random_state=seed)
+    return StandardScaler().fit_transform(X)
 
 
 @pytest.mark.parametrize("bin_size, min_bin_freq", [(1.0, 1), (0.5, 3)])
@@ -133,8 +138,8 @@ def test_list_input_equals_array_input():
 @pytest.mark.parametrize("min_bin_freq", [1, 5])
 @pytest.mark.parametrize("seed", [0, 1, 2])
 @pytest.mark.parametrize("name", NAMES)
-def test_synthetic_matches_sklearn(name, seed, min_bin_freq):
-    X = load_synthetic(name, seed)
+def test_real_matches_sklearn(name, seed, min_bin_freq):
+    X = load_real(name, seed)
     h = sk_estimate_bandwidth(X)
     ours = get_bin_seeds(X, h, min_bin_freq)
     theirs = sk_get_bin_seeds(X, h, min_bin_freq)
@@ -143,7 +148,7 @@ def test_synthetic_matches_sklearn(name, seed, min_bin_freq):
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_synthetic_has_fewer_seeds_than_points(name):
-    X = load_synthetic(name, 0)
+def test_real_has_fewer_seeds_than_points(name):
+    X = load_real(name, 0)
     seeds = get_bin_seeds(X, sk_estimate_bandwidth(X))
     assert 0 < len(seeds) < len(X)

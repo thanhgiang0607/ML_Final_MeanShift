@@ -1,84 +1,49 @@
 {
-  "task": "E3 — runtime and memory",
-  "config": {
-    "dataset": {
-      "centers": 5,
-      "cluster_std": 1.0,
-      "dimensions": 2,
-      "random_state": 0,
-      "reference_n": 2000,
-      "bandwidth_quantile": 0.1,
-      "bandwidth_n_samples": null
-    },
-    "n_sweep": {
-      "values": [
-        500,
-        1000,
-        2000,
-        5000,
-        10000,
-        20000,
-        50000
-      ]
-    },
-    "h_sweep": {
-      "n": 5000,
-      "alphas": [
-        0.25,
-        0.5,
-        1.0,
-        2.0
-      ]
-    },
-    "benchmark": {
-      "repeats": 3,
-      "timeout_seconds": 600,
-      "max_iter": 300,
-      "tol": 0.001
-    },
-    "outputs": {
-      "directory": "results/e3",
-      "report": "report/THUC_NGHIEM_E3.md"
-    }
+  "experiment": "E3 – thời gian chạy và bộ nhớ trên dữ liệu thật",
+  "n_sweep": {
+    "dataset": "breast_cancer",
+    "n_values": [
+      100,
+      200,
+      300,
+      400,
+      500,
+      569
+    ],
+    "sampling": "chuẩn hoá toàn bộ dữ liệu rồi lấy mẫu con phân tầng random_state=0",
+    "h": "estimate_bandwidth trên toàn bộ dữ liệu chuẩn hoá, giữ cố định"
   },
-  "config_file": "configs/e3_runtime.yaml",
-  "h0": 1.5541824262843624,
-  "repeats": 3,
-  "timeout_seconds": 600.0,
-  "quick_mode": false,
+  "h_sweep": {
+    "datasets": [
+      "iris",
+      "wine",
+      "breast_cancer"
+    ],
+    "alphas": [
+      0.25,
+      0.5,
+      1.0,
+      2.0
+    ],
+    "h": "α·estimate_bandwidth(X, quantile=0.3)"
+  },
   "methods": [
-    "custom_brute",
-    "custom_kdtree",
-    "custom_kdtree_bin",
+    "custom brute",
+    "custom kdtree",
+    "custom kdtree + bin",
     "sklearn",
-    "sklearn_bin"
+    "sklearn + bin"
   ],
-  "method_labels": {
-    "custom_brute": "Custom brute",
-    "custom_kdtree": "Custom KD-Tree",
-    "custom_kdtree_bin": "Custom KD-Tree + bin seeding",
-    "sklearn": "sklearn (bin seeding off)",
-    "sklearn_bin": "sklearn (bin seeding on)"
-  },
-  "environment": {
-    "cpu": "Apple M1",
-    "logical_cpu_count": 8,
-    "ram_gb": 16.0,
-    "operating_system": "macOS-15.6.1-arm64-arm-64bit-Mach-O",
-    "python": "3.14.5 (v3.14.5:5607950ef23, May 10 2026, 07:38:09) [Clang 21.0.0 (clang-2100.0.123.102)]",
+  "repeats": 3,
+  "time": "time.perf_counter, trung vị các lần đo",
+  "memory": "tracemalloc, đo ở 1 lần chạy riêng",
+  "threadpool_limit": 1,
+  "sklearn_n_jobs": 1,
+  "versions": {
+    "python": "3.14.5",
     "numpy": "2.4.6",
+    "pandas": "3.0.3",
     "scipy": "1.17.1",
-    "scikit_learn": "1.8.0",
-    "script": "experiments/e3_runtime.py",
-    "measurement_protocol": "runtime: perf_counter around fit with no tracemalloc/wrappers; memory: separate tracemalloc fit with no wrappers; diagnostics: separate fit with neighbor/iteration wrappers",
-    "memory_measurement": "tracemalloc peak Python-traced memory; not total native/process RSS"
-  },
-  "raw_csv": "results/e3/e3_runs.csv",
-  "summary_csv": "results/e3/e3_summary.csv",
-  "measurement_protocol": {
-    "time": "repeated fit runs with perf_counter; tracemalloc off; no instrumentation wrappers",
-    "memory": "one separate fit run with tracemalloc; no instrumentation wrappers",
-    "diagnostics": "one separate fit run with wrappers for neighbor and iteration statistics; its elapsed time is not used"
-  },
-  "note": "tracemalloc peak is Python-traced memory, not complete process RSS. Bandwidth quantile defaults to 0.1; inspect median_n_clusters in the report."
+    "scikit_learn": "1.8.0"
+  }
 }

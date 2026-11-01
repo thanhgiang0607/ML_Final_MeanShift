@@ -2,11 +2,6 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 .omc/
-# Dữ liệu lớn: tải lại theo link trong Proposal
-data/isic2018/
-# Dữ liệu giả: sinh lại bằng data/make_synthetic.py
-data/synthetic/
-# Kết quả thực nghiệm: chỉ đưa lên bảng tổng hợp, hình và metadata
 results/**
 !results/*/
 !results/.gitkeep
@@ -15,8 +10,3 @@ results/**
 !results/**/*_metadata.json
 !results/**/*.png
 !results/**/env.txt
-!results/**/best_h_*.json
-!results/e5/e5_best_params.json
-!results/e5/e5_wilcoxon.csv
-!results/e5/e5_vs_sklearn.csv
-!results/e5/e5_failure_groups.csv

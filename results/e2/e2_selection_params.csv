@@ -1,0 +1,49 @@
+dataset,method,param,value,silhouette,n_clusters,ari_for_reference,silhouette_relaxed,noise_fraction
+iris,MeanShift (h chọn),alpha,0.25,0.2728662097329841,49.0,0.1240108010546746,,
+iris,MeanShift (h chọn),alpha,0.5,0.3645391614769969,7.0,0.5255563446969697,,
+iris,MeanShift (h chọn),alpha,0.75,0.43251408537574926,3.0,0.560024437429997,,
+iris,MeanShift (h chọn),alpha,1.0,0.5817500491982808,2.0,0.5681159420289855,,
+iris,MeanShift (h chọn),alpha,1.5,0.5817500491982808,2.0,0.5681159420289855,,
+iris,MeanShift (h chọn),alpha,2.0,-inf,1.0,0.0,,
+iris,DBSCAN,eps,0.1,-inf,0.0,0.0,-inf,1.0
+iris,DBSCAN,eps,0.2,-inf,0.0,0.0,-inf,1.0
+iris,DBSCAN,eps,0.3,-inf,3.0,0.08759538435941186,0.6301763083833151,0.8
+iris,DBSCAN,eps,0.4,0.48645651184412797,6.0,0.36550715288152474,0.48645651184412797,0.44
+iris,DBSCAN,eps,0.5,0.6558885287002018,2.0,0.4420986685885924,0.6558885287002018,0.22666666666666666
+iris,DBSCAN,eps,0.75,0.6017954437722106,2.0,0.5400773829118303,0.6017954437722106,0.04
+iris,DBSCAN,eps,1.0,0.5951863189064303,2.0,0.5535820784912958,0.5951863189064303,0.02
+iris,DBSCAN,eps,1.5,0.5817500491982808,2.0,0.5681159420289855,0.5817500491982808,0.0
+iris,DBSCAN,eps,2.0,-inf,1.0,0.0,-inf,0.0
+iris,DBSCAN,eps,3.0,-inf,1.0,0.0,-inf,0.0
+wine,MeanShift (h chọn),alpha,0.25,0.014228801384183283,63.0,0.06543536822060483,,
+wine,MeanShift (h chọn),alpha,0.5,0.093059644897625,18.0,0.4019689614606688,,
+wine,MeanShift (h chọn),alpha,0.75,0.25051689504108987,3.0,0.4445688663091482,,
+wine,MeanShift (h chọn),alpha,1.0,0.22447619269259034,2.0,-0.0064242403723043275,,
+wine,MeanShift (h chọn),alpha,1.5,-inf,1.0,0.0,,
+wine,MeanShift (h chọn),alpha,2.0,-inf,1.0,0.0,,
+wine,DBSCAN,eps,0.1,-inf,0.0,0.0,-inf,1.0
+wine,DBSCAN,eps,0.2,-inf,0.0,0.0,-inf,1.0
+wine,DBSCAN,eps,0.3,-inf,0.0,0.0,-inf,1.0
+wine,DBSCAN,eps,0.4,-inf,0.0,0.0,-inf,1.0
+wine,DBSCAN,eps,0.5,-inf,0.0,0.0,-inf,1.0
+wine,DBSCAN,eps,0.75,-inf,0.0,0.0,-inf,1.0
+wine,DBSCAN,eps,1.0,-inf,0.0,0.0,-inf,1.0
+wine,DBSCAN,eps,1.5,-inf,0.0,0.0,-inf,1.0
+wine,DBSCAN,eps,2.0,0.24046128028458874,5.0,0.22049122985497493,0.24046128028458874,0.47752808988764045
+wine,DBSCAN,eps,3.0,-inf,1.0,-0.005929398352149316,-inf,0.06179775280898876
+breast_cancer,MeanShift (h chọn),alpha,0.25,-inf,,,,
+breast_cancer,MeanShift (h chọn),alpha,0.5,0.31599195735332897,2.0,0.7494259795862545,,
+breast_cancer,MeanShift (h chọn),alpha,0.75,0.3704408566824521,2.0,0.09925146093995633,,
+breast_cancer,MeanShift (h chọn),alpha,1.0,-inf,1.0,0.0,,
+breast_cancer,MeanShift (h chọn),alpha,1.5,0.5908436769031525,2.0,0.006690653695840608,,
+breast_cancer,MeanShift (h chọn),alpha,2.0,-inf,1.0,0.0,,
+breast_cancer,DBSCAN,eps,0.1,-inf,0.0,0.0,-inf,1.0
+breast_cancer,DBSCAN,eps,0.2,-inf,0.0,0.0,-inf,1.0
+breast_cancer,DBSCAN,eps,0.3,-inf,0.0,0.0,-inf,1.0
+breast_cancer,DBSCAN,eps,0.4,-inf,0.0,0.0,-inf,1.0
+breast_cancer,DBSCAN,eps,0.5,-inf,0.0,0.0,-inf,1.0
+breast_cancer,DBSCAN,eps,0.75,-inf,0.0,0.0,-inf,1.0
+breast_cancer,DBSCAN,eps,1.0,-inf,0.0,0.0,-inf,1.0
+breast_cancer,DBSCAN,eps,1.5,-inf,1.0,-0.02269397997042009,-inf,0.9666080843585237
+breast_cancer,DBSCAN,eps,2.0,-inf,4.0,0.09635079487159537,0.09775277857667042,0.6520210896309314
+breast_cancer,DBSCAN,eps,3.0,-inf,1.0,0.12848409448263468,-inf,0.2126537785588752

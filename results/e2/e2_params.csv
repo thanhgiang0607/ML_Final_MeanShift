@@ -1,26 +1,16 @@
-dataset,method,param,value,ari_seed0
-blobs,MeanShift (h mặc định),alpha,1.0,
-blobs,MeanShift (h chọn),alpha,0.5,0.9823269772893178
-blobs,KMeans,k,4.0,
-blobs,DBSCAN,eps,0.1,0.8447466594010972
-blobs,GMM,k,4.0,
-blobs_varied,MeanShift (h mặc định),alpha,1.0,
-blobs_varied,MeanShift (h chọn),alpha,0.5,0.4907834107681608
-blobs_varied,KMeans,k,3.0,
-blobs_varied,DBSCAN,eps,0.1,0.4552508684022581
-blobs_varied,GMM,k,3.0,
-blobs_aniso,MeanShift (h mặc định),alpha,1.0,
-blobs_aniso,MeanShift (h chọn),alpha,1.5,0.4863639586129422
-blobs_aniso,KMeans,k,3.0,
-blobs_aniso,DBSCAN,eps,0.05,0.14679128216031284
-blobs_aniso,GMM,k,3.0,
-moons,MeanShift (h mặc định),alpha,1.0,
-moons,MeanShift (h chọn),alpha,1.0,0.5472980236551216
-moons,KMeans,k,2.0,
-moons,DBSCAN,eps,0.2,1.0
-moons,GMM,k,2.0,
-circles,MeanShift (h mặc định),alpha,1.0,
-circles,MeanShift (h chọn),alpha,0.5,0.15174978537493825
-circles,KMeans,k,2.0,
-circles,DBSCAN,eps,0.3,1.0
-circles,GMM,k,2.0,
+dataset,method,param,value,silhouette_seed0
+iris,MeanShift (h mặc định),alpha,1.0,
+iris,MeanShift (h chọn),alpha,1.0,0.5817500491982808
+iris,KMeans,k,3.0,
+iris,DBSCAN,eps,0.5,0.6558885287002018
+iris,GMM,k,3.0,
+wine,MeanShift (h mặc định),alpha,1.0,
+wine,MeanShift (h chọn),alpha,0.75,0.25051689504108987
+wine,KMeans,k,3.0,
+wine,DBSCAN,eps,2.0,0.24046128028458874
+wine,GMM,k,3.0,
+breast_cancer,MeanShift (h mặc định),alpha,1.0,
+breast_cancer,MeanShift (h chọn),alpha,1.5,0.5908436769031525
+breast_cancer,KMeans,k,2.0,
+breast_cancer,DBSCAN,eps,2.0,0.09775277857667042
+breast_cancer,GMM,k,2.0,

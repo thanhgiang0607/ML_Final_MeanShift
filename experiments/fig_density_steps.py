@@ -27,7 +27,7 @@ def main():
         ax.set_xlabel("Bước dịch chuyển t")
         ax.set_ylabel(ylabel)
         ax.grid(alpha=0.3)
-    fig.suptitle("Mật độ tại điểm đang dịch chuyển qua từng bước (blobs, seed 0)")
+    fig.suptitle(f"Mật độ tại điểm đang dịch chuyển qua từng bước (Iris, PCA 2D, xuất phát từ X[{int(frame.start_index.iloc[0])}])")
     fig.tight_layout()
     out = ROOT / "report" / "figures" / "density_steps.png"
     out.parent.mkdir(parents=True, exist_ok=True)

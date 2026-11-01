@@ -24,127 +24,71 @@
     9
   ],
   "datasets": [
-    "blobs",
-    "blobs_varied",
-    "blobs_aniso",
-    "moons",
-    "circles"
+    "iris",
+    "wine",
+    "breast_cancer"
   ],
-  "selection": "α (Mean-Shift) và eps (DBSCAN) chọn theo ARI cao nhất trên seed 0, giữ nguyên cho các seed khác",
+  "selection": "α (Mean-Shift) và eps (DBSCAN) chọn theo silhouette cao nhất trên seed 0, không dùng nhãn; hoà thì lấy giá trị nhỏ hơn; giữ nguyên cho các seed khác",
+  "selection_constraints": "chỉ xét cấu hình có ≥ 2 cụm và ≥ 50% điểm không phải nhiễu; silhouette tính trên các điểm không phải nhiễu",
   "alpha_grid": [
     0.25,
     0.5,
     0.75,
     1.0,
-    1.5
+    1.5,
+    2.0
   ],
   "eps_grid": [
-    0.05,
     0.1,
-    0.15,
     0.2,
-    0.25,
     0.3,
     0.4,
-    0.5
+    0.5,
+    0.75,
+    1.0,
+    1.5,
+    2.0,
+    3.0
   ],
   "min_samples": 5,
   "selected_params": {
-    "blobs": {
-      "alpha": 0.5,
-      "alpha_ari_seed0": 0.9823269772893178,
-      "eps": 0.1,
-      "eps_ari_seed0": 0.8447466594010972
-    },
-    "blobs_varied": {
-      "alpha": 0.5,
-      "alpha_ari_seed0": 0.4907834107681608,
-      "eps": 0.1,
-      "eps_ari_seed0": 0.4552508684022581
-    },
-    "blobs_aniso": {
-      "alpha": 1.5,
-      "alpha_ari_seed0": 0.4863639586129422,
-      "eps": 0.05,
-      "eps_ari_seed0": 0.14679128216031284
-    },
-    "moons": {
+    "iris": {
       "alpha": 1.0,
-      "alpha_ari_seed0": 0.5472980236551216,
-      "eps": 0.2,
-      "eps_ari_seed0": 1.0
+      "alpha_silhouette_seed0": 0.5817500491982808,
+      "alpha_rule": "chặt",
+      "eps": 0.5,
+      "eps_silhouette_seed0": 0.6558885287002018,
+      "eps_rule": "chặt"
     },
-    "circles": {
-      "alpha": 0.5,
-      "alpha_ari_seed0": 0.15174978537493825,
-      "eps": 0.3,
-      "eps_ari_seed0": 1.0
+    "wine": {
+      "alpha": 0.75,
+      "alpha_silhouette_seed0": 0.25051689504108987,
+      "alpha_rule": "chặt",
+      "eps": 2.0,
+      "eps_silhouette_seed0": 0.24046128028458874,
+      "eps_rule": "chặt"
+    },
+    "breast_cancer": {
+      "alpha": 1.5,
+      "alpha_silhouette_seed0": 0.5908436769031525,
+      "alpha_rule": "chặt",
+      "eps": 2.0,
+      "eps_silhouette_seed0": 0.09775277857667042,
+      "eps_rule": "nới (bỏ điều kiện tỉ lệ nhiễu)"
     }
   },
   "true_k": {
-    "blobs": 4,
-    "blobs_varied": 3,
-    "blobs_aniso": 3,
-    "moons": 2,
-    "circles": 2
+    "iris": 3,
+    "wine": 3,
+    "breast_cancer": 2
   },
   "meanshift": "MeanShiftCustom(flat, kdtree, bin_seeding=True), h0 = meanshift.estimate_bandwidth(X, quantile=0.3)",
   "oracle_k": "KMeans, GMM được biết trước số cụm đúng",
+  "data": "sklearn.datasets (Iris, Wine, Breast Cancer), đủ số chiều; seed 0 = toàn bộ dữ liệu (dùng chọn tham số), seed ≥ 1 = mẫu con phân tầng 80%",
   "standardization": "StandardScaler riêng cho từng (bộ, seed)",
+  "plot": "Hình lưới chiếu PCA 2D chỉ để trực quan; mọi thuật toán chạy trên đủ số chiều",
   "noise": "Nhãn -1 của DBSCAN được tính như một nhãn trong ARI/NMI; không đếm vào số cụm",
   "threadpool_limit": 1,
-  "input_sha256": {
-    "data/synthetic/blobs_seed0.csv": "c59e8b1522a5f92cf7f6f7b8b5d890ce844ea4d07ef805c94c0762ebb8740f9c",
-    "data/synthetic/blobs_seed1.csv": "9925daf6aa4c33e92896cd030c4e4ced93d67a3a30a856e240916c293199ee93",
-    "data/synthetic/blobs_seed2.csv": "ac8bb2c875f40968ccbe36a7f358fbfb4368eaeff29b9fffe3dddd7fcb43c1ef",
-    "data/synthetic/blobs_seed3.csv": "612c89282e3ac09adb362377012b9464a25c58c560967a888e10db3905513f2c",
-    "data/synthetic/blobs_seed4.csv": "6b791ffb17a8ae39616aeccff96ecd1eadbc72c0c611eb1f4937a79be7509769",
-    "data/synthetic/blobs_seed5.csv": "9de27775655e345054a852d8d60c3775f6c1d94abb2fa7f1dd499d454f4502d8",
-    "data/synthetic/blobs_seed6.csv": "559aa5f9e58d2d363178b8f621175b4d7838b82ae48f31315a7b658189602afc",
-    "data/synthetic/blobs_seed7.csv": "4dbb67da2b75963e3016f6ef1e2f8829b7889e2460f5bc9ab4062865475f0fc6",
-    "data/synthetic/blobs_seed8.csv": "f16cb112ca314c26fed7c376c112dcbdbceba41e68ce87d3e099500b5f4dae5d",
-    "data/synthetic/blobs_seed9.csv": "95bb4b913d55710036058b708ff7f324354f5446ba763305fe75d469b6484e6b",
-    "data/synthetic/blobs_varied_seed0.csv": "1e874ce1a4ab442768988483caf0668ae71d1f6f51fe1d2b7471857ff76cd703",
-    "data/synthetic/blobs_varied_seed1.csv": "85d774e315224436324fcd23da84a6d037bc6d39af8466e6ce03287a235d5aca",
-    "data/synthetic/blobs_varied_seed2.csv": "923deb44c53677afece6af0fcea00a824e4438a84032cfe3626658b5a245b7c3",
-    "data/synthetic/blobs_varied_seed3.csv": "9334bcaa83c9fb00605a90013d0078dc4919b9f33a08c8386c83f23ac723f4db",
-    "data/synthetic/blobs_varied_seed4.csv": "986d3f7e7bd7e8cb76388fb140d62d2d9d00bd9485d82f8f239fc6e81525341d",
-    "data/synthetic/blobs_varied_seed5.csv": "a790b16ea61ad3a987755f9352fa255b4ae4e9a349c9e063fd810494d2aa4a0c",
-    "data/synthetic/blobs_varied_seed6.csv": "8bea5a5b858b78535e36d1d0eb87b9adfee0890a2fd1fca6bbac4648be4dbe85",
-    "data/synthetic/blobs_varied_seed7.csv": "fbed8ab2a0dd713be2c25674dbf06d5bf9e5286a323379f47f8ef650918c23c6",
-    "data/synthetic/blobs_varied_seed8.csv": "f5f941e8e53e65152e133422b8158d218e807676c0a3c8a2db0c8671f0bb85bd",
-    "data/synthetic/blobs_varied_seed9.csv": "87f229880cb95e4fd1709bed3c0e56985bc5bd249ac9086690b916e76512c0a8",
-    "data/synthetic/blobs_aniso_seed0.csv": "3b8d5dd011573eae7f27bce31c82cf821b9fc095a2e1e4661bb5ee2de3c2352b",
-    "data/synthetic/blobs_aniso_seed1.csv": "998dc33cba27c58492842ebd112973678acc9c4a1ad056b197865354e2c4ee39",
-    "data/synthetic/blobs_aniso_seed2.csv": "d8ef99930687afd4c503dcaf9e5382650caaddc8f978af53fccb42da9a420085",
-    "data/synthetic/blobs_aniso_seed3.csv": "41715810b404981c52f8634ac9d0904bf8b388889f61ce28f4c181a0c1a99e04",
-    "data/synthetic/blobs_aniso_seed4.csv": "ff87ee8aede3e7d3341a50d2f5641887e5c6d256306bf040fb26c67eb50b851f",
-    "data/synthetic/blobs_aniso_seed5.csv": "da219bb5d67b8c07d2e82a930951b1737c9ba9a980418e785e5c8da91677cc62",
-    "data/synthetic/blobs_aniso_seed6.csv": "b8b1b4ba55ba90bd3044119fdc11b0200947515894032a2ffad0508e104ce873",
-    "data/synthetic/blobs_aniso_seed7.csv": "ddf1b88c4f696d293e470f3538ccb4d8945b17bc5393898b8a2d89b7a846fb02",
-    "data/synthetic/blobs_aniso_seed8.csv": "cffaa8d58fe6d5817fe511d0db0169de9b4a2a4fc85c2fa9eed61c4789ca6e9e",
-    "data/synthetic/blobs_aniso_seed9.csv": "fb734d2ade303167181fa94c1bf0d23f8f92d90f54c4b924e01b5e6e20332539",
-    "data/synthetic/moons_seed0.csv": "51452163f906074a41f020ece72ac2c01b02665a29f3eeb2e7e5f9229a011635",
-    "data/synthetic/moons_seed1.csv": "0bce4caeadb6c8070703e947348ea5d1641e11b18d82e6b7bd810614bd6f2f03",
-    "data/synthetic/moons_seed2.csv": "0a3ef20b1392db639f988d70e1324c78ea82247f9b1408cb1b9ea2b9349bd7bd",
-    "data/synthetic/moons_seed3.csv": "fb8021c4db45dc1be046e228df52354061acc994fd3f8a053da28f5ce58ccde3",
-    "data/synthetic/moons_seed4.csv": "75c0e9570ebee842a7b5775ab19fc0ec0d43b7355c281c7759a5cfacfa613721",
-    "data/synthetic/moons_seed5.csv": "9dfe35d1231d50a1764c288aad3d3a539c991d91d5b8309c4b88ac313023050d",
-    "data/synthetic/moons_seed6.csv": "b1f36f6acb1122f69fc1723578a8a95dbaa9088efcba83fbf50000dcbd9769fb",
-    "data/synthetic/moons_seed7.csv": "e16fae4a1fa9972d184a8a756bce7993e2d87b403d683b0291cd6016ec0d28a2",
-    "data/synthetic/moons_seed8.csv": "db8acf5d275daaec954999b5676675f1931d98a911b1edb9354398a0af29c679",
-    "data/synthetic/moons_seed9.csv": "250be1d4f5d1bd06064721e7018a97e536438741d8c29f9dd52cfc13d69a0e0f",
-    "data/synthetic/circles_seed0.csv": "93da246668548262ef093ba53a87406d1169a92b840ba422ee80d77d0b68be04",
-    "data/synthetic/circles_seed1.csv": "6e9dc4979b195c8894eebd4db4afa080793e54341577f87dfca95b82f2e798f2",
-    "data/synthetic/circles_seed2.csv": "4052813ed1b9d4bd1f933e94c189fb8b323bf98d886d3736428851318c17d627",
-    "data/synthetic/circles_seed3.csv": "7fce1832f9ac7c8a526f1f5f3a162849f8cd7c90b1c0b1b09e606c727d145dea",
-    "data/synthetic/circles_seed4.csv": "b6ca8f40921a22c172268ae9c779cd2c0d446f2c62e2c2109c810055ebe16781",
-    "data/synthetic/circles_seed5.csv": "f33f28fe438f1c5724e95ad806ae93b9347b7f482c00b2d338e1514a2df844e4",
-    "data/synthetic/circles_seed6.csv": "70569973b8198b23605b4cdebb6a6699cddebcaee4d2fe24effcad5d8e296e9a",
-    "data/synthetic/circles_seed7.csv": "7a8ebe726b6d076f607bb0e11482484ced6be018fa8c46e169b66ebc9625bb4d",
-    "data/synthetic/circles_seed8.csv": "e4fc8def927d826074059fc452810c55932c8f5dce1b84a9a0782dc608be8b6f",
-    "data/synthetic/circles_seed9.csv": "4284a362bf6843fd164721b1d3050cfb91b84de41ec2b82917ac05ed33a534ed"
-  },
   "versions": {
     "python": "3.14.5",
     "numpy": "2.4.6",
