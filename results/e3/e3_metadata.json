@@ -1,5 +1,5 @@
 {
-  "experiment": "E3 – thời gian chạy và bộ nhớ trên dữ liệu thật",
+  "experiment": "E3 – thời gian thực thi trên dữ liệu thật",
   "n_sweep": {
     "dataset": "breast_cancer",
     "n_values": [
@@ -36,7 +36,6 @@
   ],
   "repeats": 3,
   "time": "time.perf_counter, trung vị các lần đo",
-  "memory": "tracemalloc, đo ở 1 lần chạy riêng",
   "threadpool_limit": 1,
   "sklearn_n_jobs": 1,
   "versions": {

@@ -17,7 +17,7 @@ Tự cài thuật toán Mean-Shift theo hướng đối tượng (chỉ dùng Nu
 │   ├── common.py              #   Đọc dữ liệu thật, chuẩn hoá, PCA 2D, mẫu con
 │   ├── e1_compare_sklearn.py  #   E1 – đối chiếu với sklearn
 │   ├── e2_compare_algorithms.py  # E2 – so với K-Means, DBSCAN, GMM
-│   ├── e3_runtime.py          #   E3 – thời gian chạy và bộ nhớ
+│   ├── e3_runtime.py          #   E3 – thời gian thực thi
 │   └── fig_*.py               #   Vẽ hình minh hoạ
 ├── data/                      # CSV của 3 bộ dữ liệu: bản gốc và bản 2D (*_pca2.csv), xuất bằng export_datasets.py
 ├── results/                   # Kết quả E1–E3 (hình, bảng tổng hợp, metadata)
@@ -32,7 +32,7 @@ python3 -m pytest                             # unit test
 
 python3 experiments/e1_compare_sklearn.py     # E1 – đối chiếu sklearn (--seeds 1 để chạy thử)
 python3 experiments/e2_compare_algorithms.py  # E2 – so với K-Means, DBSCAN, GMM
-python3 experiments/e3_runtime.py             # E3 – thời gian chạy và bộ nhớ
+python3 experiments/e3_runtime.py             # E3 – thời gian thực thi
 for f in experiments/fig_*.py; do python3 "$f"; done   # hình trong report/figures
 ```
 

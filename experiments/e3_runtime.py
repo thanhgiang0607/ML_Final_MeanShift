@@ -3,7 +3,6 @@ import json
 import platform
 import sys
 import time
-import tracemalloc
 from pathlib import Path
 
 import matplotlib
@@ -57,19 +56,15 @@ def measure(method, X, h, repeats):
     try:
         make_model(method, h).fit(X)
     except ValueError as exc:
-        return {"time_median_s": np.nan, "time_min_s": np.nan, "time_max_s": np.nan, "peak_memory_mb": np.nan,
+        return {"time_median_s": np.nan, "time_min_s": np.nan, "time_max_s": np.nan,
                 "n_seeds": n_seeds(method, X, h), "n_clusters": np.nan, "n_iter": np.nan, "error": str(exc)}
     times, model = [], None
     for _ in range(repeats):
         start = time.perf_counter()
         model = make_model(method, h).fit(X)
         times.append(time.perf_counter() - start)
-    tracemalloc.start()
-    make_model(method, h).fit(X)
-    peak = tracemalloc.get_traced_memory()[1]
-    tracemalloc.stop()
     return {"time_median_s": float(np.median(times)), "time_min_s": float(np.min(times)),
-            "time_max_s": float(np.max(times)), "peak_memory_mb": peak / 2**20,
+            "time_max_s": float(np.max(times)),
             "n_seeds": n_seeds(method, X, h), "n_clusters": len(model.cluster_centers_),
             "n_iter": int(model.n_iter_), "error": ""}
 
@@ -130,7 +125,7 @@ def plot_vs_h(summary, path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="E3: thời gian chạy và bộ nhớ trên dữ liệu thật.")
+    parser = argparse.ArgumentParser(description="E3: thời gian thực thi trên dữ liệu thật.")
     parser.add_argument("--repeats", type=int, default=REPEATS, help=f"số lần đo mỗi cấu hình (mặc định {REPEATS})")
     args = parser.parse_args()
     if args.repeats <= 0:
@@ -161,21 +156,19 @@ def main():
 
     plot_vs_n(summary, "time_median_s", "Thời gian trung vị (s, log)",
               f"Thời gian chạy theo n ({N_SWEEP_DATASET}, h cố định)", OUT / "e3_time_vs_n.png")
-    plot_vs_n(summary, "peak_memory_mb", "Bộ nhớ đỉnh (MB)",
-              f"Bộ nhớ đỉnh theo n ({N_SWEEP_DATASET}, h cố định)", OUT / "e3_memory_vs_n.png", log_y=False)
     plot_vs_h(summary, OUT / "e3_time_vs_h.png")
 
     env = (f"python {platform.python_version()}\nplatform {platform.platform()}\nprocessor {platform.processor()}\n"
            f"numpy {np.__version__}\nscipy {scipy.__version__}\nscikit-learn {sklearn.__version__}\n")
     (OUT / "env.txt").write_text(env, encoding="utf-8")
     metadata = {
-        "experiment": "E3 – thời gian chạy và bộ nhớ trên dữ liệu thật",
+        "experiment": "E3 – thời gian thực thi trên dữ liệu thật",
         "n_sweep": {"dataset": N_SWEEP_DATASET, "n_values": N_VALUES,
                     "sampling": "chuẩn hoá và PCA 2D trên toàn bộ dữ liệu rồi lấy mẫu con phân tầng random_state=0",
                     "h": "estimate_bandwidth trên toàn bộ dữ liệu 2D, giữ cố định"},
         "h_sweep": {"datasets": DATASETS, "alphas": ALPHAS, "h": "α·estimate_bandwidth(X, quantile=0.3)"},
         "methods": METHODS, "repeats": args.repeats,
-        "time": "time.perf_counter, trung vị các lần đo", "memory": "tracemalloc, đo ở 1 lần chạy riêng",
+        "time": "time.perf_counter, trung vị các lần đo",
         "threadpool_limit": 1, "sklearn_n_jobs": 1,
         "versions": {"python": platform.python_version(), "numpy": np.__version__, "pandas": pd.__version__,
                      "scipy": scipy.__version__, "scikit_learn": sklearn.__version__},
