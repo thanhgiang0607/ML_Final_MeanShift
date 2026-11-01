@@ -7,6 +7,7 @@ from sklearn.cluster import get_bin_seeds as sk_get_bin_seeds
 from sklearn.datasets import make_blobs
 from sklearn.datasets import load_breast_cancer, load_iris, load_wine
 from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 from meanshift.seeding import get_bin_seeds
@@ -26,7 +27,7 @@ def load_real(name, seed):
     X, y = data.data, data.target
     if seed > 0:
         X, _, y, _ = train_test_split(X, y, train_size=0.8, stratify=y, random_state=seed)
-    return StandardScaler().fit_transform(X)
+    return PCA(n_components=2, random_state=0).fit_transform(StandardScaler().fit_transform(X))
 
 
 @pytest.mark.parametrize("bin_size, min_bin_freq", [(1.0, 1), (0.5, 3)])

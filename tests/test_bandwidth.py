@@ -5,6 +5,7 @@ from sklearn.cluster import estimate_bandwidth as sk_estimate_bandwidth
 from sklearn.datasets import make_blobs
 from sklearn.datasets import load_breast_cancer, load_iris, load_wine
 from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 from meanshift.bandwidth import estimate_bandwidth
@@ -18,7 +19,7 @@ def load_real(name, seed):
     X, y = data.data, data.target
     if seed > 0:
         X, _, y, _ = train_test_split(X, y, train_size=0.8, stratify=y, random_state=seed)
-    return StandardScaler().fit_transform(X)
+    return PCA(n_components=2, random_state=0).fit_transform(StandardScaler().fit_transform(X))
 
 
 @pytest.mark.parametrize("quantile", [0.1, 0.3, 0.5])

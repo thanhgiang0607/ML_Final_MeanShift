@@ -1,16 +1,16 @@
 dataset,method,param,value,silhouette_seed0
 iris,MeanShift (h mặc định),alpha,1.0,
-iris,MeanShift (h chọn),alpha,1.0,0.5817500491982808
+iris,MeanShift (h chọn),alpha,1.0,0.6145202036230449
 iris,KMeans,k,3.0,
-iris,DBSCAN,eps,0.5,0.6558885287002018
+iris,DBSCAN,eps,0.4,0.6698871326434381
 iris,GMM,k,3.0,
 wine,MeanShift (h mặc định),alpha,1.0,
-wine,MeanShift (h chọn),alpha,0.75,0.25051689504108987
+wine,MeanShift (h chọn),alpha,0.75,0.5609305721582905
 wine,KMeans,k,3.0,
-wine,DBSCAN,eps,2.0,0.24046128028458874
+wine,DBSCAN,eps,0.5,0.523215536111082
 wine,GMM,k,3.0,
 breast_cancer,MeanShift (h mặc định),alpha,1.0,
-breast_cancer,MeanShift (h chọn),alpha,1.5,0.5908436769031525
+breast_cancer,MeanShift (h chọn),alpha,1.0,0.4568878378745543
 breast_cancer,KMeans,k,2.0,
-breast_cancer,DBSCAN,eps,2.0,0.09775277857667042
+breast_cancer,DBSCAN,eps,1.5,0.4084740168538427
 breast_cancer,GMM,k,2.0,

@@ -19,7 +19,7 @@ from threadpoolctl import threadpool_limits
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from meanshift import MeanShiftCustom, estimate_bandwidth
-from common import DATASETS, SUBSAMPLE, TRUE_K, load_real, out_dir, pca_2d
+from common import DATASETS, SUBSAMPLE, TRUE_K, load_real, out_dir
 
 OUT = out_dir("e2")
 METHODS = ["MeanShift (h mặc định)", "MeanShift (h chọn)", "KMeans", "DBSCAN", "GMM"]
@@ -160,13 +160,13 @@ def main():
                              constrained_layout=True)
     for ri, name in enumerate(DATASETS):
         X, y = examples[(name, "Nhãn thật")]
-        P = pca_2d(X).transform(X)
+        P = X
         for ci, method in enumerate(cols):
             labels = examples[(name, method)][1]
             ax = axes[ri, ci]
             ax.scatter(P[:, 0], P[:, 1], c=labels, s=7, cmap="tab20", linewidths=0)
             if method == "Nhãn thật":
-                ax.set_title(f"{name} — nhãn thật\nk = {TRUE_K[name]}, chiếu PCA 2D", fontsize=9)
+                ax.set_title(f"{name} — nhãn thật\nk = {TRUE_K[name]}", fontsize=9)
             else:
                 row = runs[(runs.dataset == name) & (runs.seed == 0) & (runs.method == method)].iloc[0]
                 ax.set_title(f"{method}\nARI = {row.ari:.3f}, số cụm = {row.n_clusters}", fontsize=9)
@@ -194,9 +194,9 @@ def main():
         "selected_params": params, "true_k": TRUE_K,
         "meanshift": "MeanShiftCustom(flat, kdtree, bin_seeding=True), h0 = meanshift.estimate_bandwidth(X, quantile=0.3)",
         "oracle_k": "KMeans, GMM được biết trước số cụm đúng",
-        "data": f"sklearn.datasets (Iris, Wine, Breast Cancer), đủ số chiều; seed 0 = toàn bộ dữ liệu (dùng chọn tham số), seed ≥ 1 = mẫu con phân tầng {SUBSAMPLE:.0%}",
-        "standardization": "StandardScaler riêng cho từng (bộ, seed)",
-        "plot": "Hình lưới chiếu PCA 2D chỉ để trực quan; mọi thuật toán chạy trên đủ số chiều",
+        "data": f"sklearn.datasets (Iris, Wine, Breast Cancer), chuẩn hoá rồi PCA 2D; seed 0 = toàn bộ dữ liệu (dùng chọn tham số), seed ≥ 1 = mẫu con phân tầng {SUBSAMPLE:.0%}",
+        "standardization": "StandardScaler rồi PCA 2 thành phần, làm riêng cho từng (bộ, seed)",
+        "plot": "Hình lưới vẽ trực tiếp trên không gian 2D mà các thuật toán sử dụng",
         "noise": "Nhãn -1 của DBSCAN được tính như một nhãn trong ARI/NMI; không đếm vào số cụm",
         "threadpool_limit": 1,
         "versions": {"python": sys.version.split()[0], "numpy": np.__version__, "pandas": pd.__version__,

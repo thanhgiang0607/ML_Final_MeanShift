@@ -31,8 +31,8 @@
     "kdtree"
   ],
   "rows": 360,
-  "data": "sklearn.datasets (Iris, Wine, Breast Cancer), StandardScaler, \u0111\u1ee7 s\u1ed1 chi\u1ec1u; seed 0 = to\u00e0n b\u1ed9 d\u1eef li\u1ec7u, seed \u2265 1 = m\u1eabu con ph\u00e2n t\u1ea7ng 80%",
-  "diagnostic_data": "Iris chu\u1ea9n ho\u00e1 r\u1ed3i chi\u1ebfu PCA 2D (cho h\u00ecnh KDE v\u00e0 m\u1eadt \u0111\u1ed9 theo b\u01b0\u1edbc)",
+  "data": "sklearn.datasets (Iris, Wine, Breast Cancer), StandardScaler r\u1ed3i PCA 2 th\u00e0nh ph\u1ea7n; seed 0 = to\u00e0n b\u1ed9 d\u1eef li\u1ec7u, seed \u2265 1 = m\u1eabu con ph\u00e2n t\u1ea7ng 80%",
+  "diagnostic_data": "Iris PCA 2D, to\u00e0n b\u1ed9 d\u1eef li\u1ec7u (cho h\u00ecnh KDE v\u00e0 m\u1eadt \u0111\u1ed9 theo b\u01b0\u1edbc)",
   "versions": {
     "python": "3.14.5",
     "numpy": "2.4.6",

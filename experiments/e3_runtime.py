@@ -16,13 +16,12 @@ import sklearn
 from sklearn.cluster import MeanShift
 from sklearn.cluster import get_bin_seeds as sk_get_bin_seeds
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 from threadpoolctl import threadpool_limits
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from meanshift import MeanShiftCustom, estimate_bandwidth
-from common import DATASETS, load_raw, load_real, out_dir
+from common import DATASETS, load_raw, load_real, out_dir, reduce_2d
 
 OUT = out_dir("e3")
 METHODS = ["custom brute", "custom kdtree", "custom kdtree + bin", "sklearn", "sklearn + bin"]
@@ -77,7 +76,7 @@ def measure(method, X, h, repeats):
 
 def n_sweep_data():
     X_raw, y = load_raw(N_SWEEP_DATASET)
-    X = StandardScaler().fit_transform(X_raw)
+    X = reduce_2d(X_raw)[0]
     h = estimate_bandwidth(X)
     for n in N_VALUES:
         if n >= len(X):
@@ -172,8 +171,8 @@ def main():
     metadata = {
         "experiment": "E3 – thời gian chạy và bộ nhớ trên dữ liệu thật",
         "n_sweep": {"dataset": N_SWEEP_DATASET, "n_values": N_VALUES,
-                    "sampling": "chuẩn hoá toàn bộ dữ liệu rồi lấy mẫu con phân tầng random_state=0",
-                    "h": "estimate_bandwidth trên toàn bộ dữ liệu chuẩn hoá, giữ cố định"},
+                    "sampling": "chuẩn hoá và PCA 2D trên toàn bộ dữ liệu rồi lấy mẫu con phân tầng random_state=0",
+                    "h": "estimate_bandwidth trên toàn bộ dữ liệu 2D, giữ cố định"},
         "h_sweep": {"datasets": DATASETS, "alphas": ALPHAS, "h": "α·estimate_bandwidth(X, quantile=0.3)"},
         "methods": METHODS, "repeats": args.repeats,
         "time": "time.perf_counter, trung vị các lần đo", "memory": "tracemalloc, đo ở 1 lần chạy riêng",

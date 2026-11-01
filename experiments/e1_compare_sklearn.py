@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from meanshift import MeanShiftCustom
 from meanshift.bandwidth import estimate_bandwidth
-from common import DATASETS, SUBSAMPLE, load_real, load_real_2d, out_dir, pca_2d
+from common import DATASETS, SUBSAMPLE, load_real, out_dir
 
 OUT = out_dir("e1")
 ALPHAS = [0.25, 0.5, 1.0]
@@ -130,8 +130,7 @@ def run(seeds=10):
     fig, axes = plt.subplots(len(DATASETS), 2, figsize=(12, 5 * len(DATASETS)), constrained_layout=True)
     for i, dataset in enumerate(DATASETS):
         X, truth, model, reference = example_cache[(dataset, "kdtree")]
-        pca = pca_2d(X)
-        P = pca.transform(X)
+        P = X
         cost = np.linalg.norm(model.cluster_centers_[:, None] - reference.cluster_centers_[None, :], axis=2)
         rr, cc = linear_sum_assignment(cost)
         mapping = dict(zip(rr, cc))
@@ -141,13 +140,13 @@ def run(seeds=10):
             for k in np.unique(labels):
                 color_index = mapping.get(k, len(reference.cluster_centers_) + k) if j == 0 else k
                 ax.scatter(*P[labels == k].T, s=8, color=plt.get_cmap("tab20")(int(color_index) % 20), alpha=.7)
-            ax.scatter(*pca.transform(estimator.cluster_centers_).T, marker="x", s=60, c="black", linewidths=1.5)
-            ax.set_title(f"{dataset} — {title} (toàn bộ dữ liệu, α = 1, {len(estimator.cluster_centers_)} cụm)\nchiếu PCA 2D")
+            ax.scatter(*estimator.cluster_centers_.T, marker="x", s=60, c="black", linewidths=1.5)
+            ax.set_title(f"{dataset} — {title} (toàn bộ dữ liệu, α = 1, {len(estimator.cluster_centers_)} cụm)")
             ax.set_xticks([]); ax.set_yticks([])
     fig.savefig(OUT / "e1_examples.png", dpi=160)
     plt.close(fig)
 
-    X, _ = load_real_2d("iris")
+    X, _ = load_real("iris")
     h_diag = 0.5 * estimate_bandwidth(X, quantile=0.3)
     gx, gy = np.meshgrid(np.linspace(X[:, 0].min()-0.5, X[:, 0].max()+0.5, 100),
                          np.linspace(X[:, 1].min()-0.5, X[:, 1].max()+0.5, 100))
@@ -195,8 +194,8 @@ def run(seeds=10):
     metadata = {"experiment": "E1 custom vs sklearn MeanShift", "seeds": list(range(seeds)),
         "datasets": DATASETS, "alphas": ALPHAS, "bin_seeding": [False, True],
         "neighbor_search": SEARCHES, "rows": len(runs),
-        "data": f"sklearn.datasets (Iris, Wine, Breast Cancer), StandardScaler, đủ số chiều; seed 0 = toàn bộ dữ liệu, seed ≥ 1 = mẫu con phân tầng {SUBSAMPLE:.0%}",
-        "diagnostic_data": "Iris chuẩn hoá rồi chiếu PCA 2D (cho hình KDE và mật độ theo bước)",
+        "data": f"sklearn.datasets (Iris, Wine, Breast Cancer), StandardScaler rồi PCA 2 thành phần; seed 0 = toàn bộ dữ liệu, seed ≥ 1 = mẫu con phân tầng {SUBSAMPLE:.0%}",
+        "diagnostic_data": "Iris PCA 2D, toàn bộ dữ liệu (cho hình KDE và mật độ theo bước)",
         "versions": {"python": platform.python_version(), "numpy": np.__version__,
             "pandas": pd.__version__, "scipy": scipy.__version__, "scikit_learn": sklearn.__version__},
         "config": {"bandwidth": "alpha * estimate_bandwidth(X, quantile=0.3)", "quantile": 0.3,

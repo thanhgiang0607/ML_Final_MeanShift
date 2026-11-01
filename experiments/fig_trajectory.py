@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.cluster import estimate_bandwidth
 from sklearn.neighbors import KernelDensity
 
-from common import ROOT, load_real_2d
+from common import ROOT, load_real
 
 sys.path.insert(0, str(ROOT))
 from meanshift import MeanShiftCustom
@@ -17,7 +17,7 @@ N_SHOW = 40
 
 
 def main():
-    X, _ = load_real_2d("iris")
+    X, _ = load_real("iris")
     h = 0.5 * estimate_bandwidth(X, quantile=0.3)
     model = MeanShiftCustom(bandwidth=h, record_trajectories=True).fit(X)
     trajectories = model.trajectories_

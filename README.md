@@ -1,6 +1,6 @@
 # Mean-Shift: cài đặt từ đầu và so sánh
 
-Tự cài thuật toán Mean-Shift theo hướng đối tượng (chỉ dùng NumPy/SciPy), đối chiếu với `sklearn.cluster.MeanShift`, so sánh với K-Means, DBSCAN, GMM và đo thời gian chạy trên 3 bộ dữ liệu thật có sẵn trong scikit-learn: Iris, Wine, Breast Cancer.
+Tự cài thuật toán Mean-Shift theo hướng đối tượng (chỉ dùng NumPy/SciPy), đối chiếu với `sklearn.cluster.MeanShift`, so sánh với K-Means, DBSCAN, GMM và đo thời gian chạy trên 3 bộ dữ liệu thật có sẵn trong scikit-learn: Iris, Wine, Breast Cancer. Mọi thực nghiệm chạy trong **không gian 2 chiều**: dữ liệu được chuẩn hoá rồi giảm về 2 chiều bằng PCA.
 
 ## Cấu trúc thư mục
 
@@ -14,14 +14,14 @@ Tự cài thuật toán Mean-Shift theo hướng đối tượng (chỉ dùng Nu
 │   └── seeding.py             #   get_bin_seeds (bin seeding)
 ├── tests/                     # Unit test (pytest)
 ├── experiments/
-│   ├── common.py              #   Đọc dữ liệu thật (Iris, Wine, Breast Cancer), chuẩn hoá, mẫu con
+│   ├── common.py              #   Đọc dữ liệu thật, chuẩn hoá, PCA 2D, mẫu con
 │   ├── e1_compare_sklearn.py  #   E1 – đối chiếu với sklearn
 │   ├── e2_compare_algorithms.py  # E2 – so với K-Means, DBSCAN, GMM
 │   ├── e3_runtime.py          #   E3 – thời gian chạy và bộ nhớ
 │   └── fig_*.py               #   Vẽ hình minh hoạ
-├── data/                      # Bản CSV của 3 bộ dữ liệu (xuất từ sklearn bằng export_datasets.py)
+├── data/                      # CSV của 3 bộ dữ liệu: bản gốc và bản 2D (*_pca2.csv), xuất bằng export_datasets.py
 ├── results/                   # Kết quả E1–E3 (hình, bảng tổng hợp, metadata)
-└── report/                    # Báo cáo E1–E3, sơ đồ luồng fit() và sơ đồ lớp UML
+└── report/                    # Báo cáo E1–E3, Mở đầu + Chương 1 (.docx), sơ đồ fit() và UML
 ```
 
 ## Cài đặt và chạy

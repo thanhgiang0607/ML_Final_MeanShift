@@ -54,27 +54,27 @@
   "selected_params": {
     "iris": {
       "alpha": 1.0,
-      "alpha_silhouette_seed0": 0.5817500491982808,
+      "alpha_silhouette_seed0": 0.6145202036230449,
       "alpha_rule": "chặt",
-      "eps": 0.5,
-      "eps_silhouette_seed0": 0.6558885287002018,
+      "eps": 0.4,
+      "eps_silhouette_seed0": 0.6698871326434381,
       "eps_rule": "chặt"
     },
     "wine": {
       "alpha": 0.75,
-      "alpha_silhouette_seed0": 0.25051689504108987,
+      "alpha_silhouette_seed0": 0.5609305721582905,
       "alpha_rule": "chặt",
-      "eps": 2.0,
-      "eps_silhouette_seed0": 0.24046128028458874,
+      "eps": 0.5,
+      "eps_silhouette_seed0": 0.523215536111082,
       "eps_rule": "chặt"
     },
     "breast_cancer": {
-      "alpha": 1.5,
-      "alpha_silhouette_seed0": 0.5908436769031525,
+      "alpha": 1.0,
+      "alpha_silhouette_seed0": 0.4568878378745543,
       "alpha_rule": "chặt",
-      "eps": 2.0,
-      "eps_silhouette_seed0": 0.09775277857667042,
-      "eps_rule": "nới (bỏ điều kiện tỉ lệ nhiễu)"
+      "eps": 1.5,
+      "eps_silhouette_seed0": 0.4084740168538427,
+      "eps_rule": "chặt"
     }
   },
   "true_k": {
@@ -84,9 +84,9 @@
   },
   "meanshift": "MeanShiftCustom(flat, kdtree, bin_seeding=True), h0 = meanshift.estimate_bandwidth(X, quantile=0.3)",
   "oracle_k": "KMeans, GMM được biết trước số cụm đúng",
-  "data": "sklearn.datasets (Iris, Wine, Breast Cancer), đủ số chiều; seed 0 = toàn bộ dữ liệu (dùng chọn tham số), seed ≥ 1 = mẫu con phân tầng 80%",
-  "standardization": "StandardScaler riêng cho từng (bộ, seed)",
-  "plot": "Hình lưới chiếu PCA 2D chỉ để trực quan; mọi thuật toán chạy trên đủ số chiều",
+  "data": "sklearn.datasets (Iris, Wine, Breast Cancer), chuẩn hoá rồi PCA 2D; seed 0 = toàn bộ dữ liệu (dùng chọn tham số), seed ≥ 1 = mẫu con phân tầng 80%",
+  "standardization": "StandardScaler rồi PCA 2 thành phần, làm riêng cho từng (bộ, seed)",
+  "plot": "Hình lưới vẽ trực tiếp trên không gian 2D mà các thuật toán sử dụng",
   "noise": "Nhãn -1 của DBSCAN được tính như một nhãn trong ARI/NMI; không đếm vào số cụm",
   "threadpool_limit": 1,
   "versions": {

@@ -10,8 +10,8 @@
       500,
       569
     ],
-    "sampling": "chuẩn hoá toàn bộ dữ liệu rồi lấy mẫu con phân tầng random_state=0",
-    "h": "estimate_bandwidth trên toàn bộ dữ liệu chuẩn hoá, giữ cố định"
+    "sampling": "chuẩn hoá và PCA 2D trên toàn bộ dữ liệu rồi lấy mẫu con phân tầng random_state=0",
+    "h": "estimate_bandwidth trên toàn bộ dữ liệu 2D, giữ cố định"
   },
   "h_sweep": {
     "datasets": [

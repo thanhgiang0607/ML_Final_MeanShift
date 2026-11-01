@@ -14,6 +14,7 @@ DATASETS = ["iris", "wine", "breast_cancer"]
 LOADERS = {"iris": load_iris, "wine": load_wine, "breast_cancer": load_breast_cancer}
 TRUE_K = {"iris": 3, "wine": 3, "breast_cancer": 2}
 SUBSAMPLE = 0.8
+N_COMPONENTS = 2
 
 
 def load_raw(name):
@@ -21,20 +22,17 @@ def load_raw(name):
     return data.data.astype(np.float64), np.asarray(data.target)
 
 
+def reduce_2d(X):
+    Z = StandardScaler().fit_transform(X)
+    pca = PCA(n_components=N_COMPONENTS, random_state=0).fit(Z)
+    return pca.transform(Z), float(pca.explained_variance_ratio_.sum())
+
+
 def load_real(name, seed=0):
     X, y = load_raw(name)
     if seed > 0:
         X, _, y, _ = train_test_split(X, y, train_size=SUBSAMPLE, stratify=y, random_state=seed)
-    return StandardScaler().fit_transform(X), y
-
-
-def pca_2d(X):
-    return PCA(n_components=2, random_state=0).fit(X)
-
-
-def load_real_2d(name):
-    X, y = load_real(name)
-    return pca_2d(X).transform(X), y
+    return reduce_2d(X)[0], y
 
 
 def timeit(fn, repeat=3):
