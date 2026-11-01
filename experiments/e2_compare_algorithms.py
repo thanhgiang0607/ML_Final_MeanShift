@@ -1,31 +1,3 @@
-"""E2: So sánh Mean-Shift với K-Means, DBSCAN, GMM trên 5 bộ dữ liệu giả lập.
-
-Người phụ trách: E  ·  Branch: e2-algorithms
-
-Thiết lập
----------
-- Dữ liệu: 5 bộ × `--seeds` seed (mặc định 10), chuẩn hoá StandardScaler riêng cho từng (bộ, seed).
-- Chọn tham số trên SEED 0, giữ nguyên cho seed 1–9 (theo PHAN_CONG.md):
-    * Mean-Shift (h mặc định): h = h0 = estimate_bandwidth(X, quantile=0.3) — không biết số cụm.
-    * Mean-Shift (h chọn):     h = α·h0, α chọn trong ALPHA_GRID cho ARI cao nhất trên seed 0.
-    * DBSCAN:                  min_samples=5, eps chọn trong EPS_GRID cho ARI cao nhất trên seed 0.
-    * K-Means, GMM:            k = số cụm đúng (oracle k) — lợi thế so với các phương pháp tự tìm số cụm.
-- Bảng tổng hợp chỉ tính trên seed 1–9 (bỏ seed 0 đã dùng để chọn tham số).
-  Chạy với --seeds 1 thì tổng hợp trên seed 0 (chỉ để chạy thử).
-- DBSCAN gán -1 cho nhiễu; ARI/NMI coi -1 như một nhãn, còn số cụm không đếm -1.
-- Thời gian chỉ đo bước fit, chạy 1 luồng (threadpool_limits=1).
-
-Đầu ra (results/e2/)
---------------------
-    e2_params.csv     tham số đã chọn trên seed 0 cho từng (bộ, thuật toán)
-    e2_runs.csv       mỗi dòng: bộ, seed, thuật toán, ARI, NMI, số cụm, tỷ lệ nhiễu, thời gian
-    e2_summary.csv    ARI, NMI, số cụm, thời gian: trung bình ± std theo (bộ, thuật toán)
-    e2_grid.png       lưới 5 bộ × 5 thuật toán, seed 0
-    e2_ari_bar.png    ARI trung bình (thanh sai số = std) theo bộ × thuật toán
-    e2_metadata.json  cấu hình, phiên bản thư viện, SHA256 dữ liệu đầu vào
-
-Chạy: python3 experiments/e2_compare_algorithms.py [--seeds 10]
-"""
 import argparse
 import hashlib
 import json
@@ -48,8 +20,8 @@ from threadpoolctl import threadpool_limits
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from meanshift import MeanShiftCustom, estimate_bandwidth  # noqa: E402
-from common import DATASETS, TRUE_K, load_synthetic, out_dir, synthetic_path  # noqa: E402
+from meanshift import MeanShiftCustom, estimate_bandwidth
+from common import DATASETS, TRUE_K, load_synthetic, out_dir, synthetic_path
 
 OUT = out_dir("e2")
 METHODS = ["MeanShift (h mặc định)", "MeanShift (h chọn)", "KMeans", "DBSCAN", "GMM"]
@@ -86,7 +58,6 @@ def fit_labels(model, X):
 
 
 def select_params(name):
-    """Chọn α (Mean-Shift) và eps (DBSCAN) cho ARI cao nhất trên seed 0."""
     X, y = load_scaled(name, 0)
     h0 = estimate_bandwidth(X)
     alpha_scores = {}
@@ -94,7 +65,7 @@ def select_params(name):
         try:
             labels = MeanShiftCustom(bandwidth=alpha * h0, bin_seeding=True).fit_predict(X)
             alpha_scores[alpha] = adjusted_rand_score(y, labels)
-        except ValueError:  # h quá nhỏ, không seed nào có láng giềng
+        except ValueError:
             alpha_scores[alpha] = -np.inf
     eps_scores = {eps: adjusted_rand_score(y, DBSCAN(eps=eps, min_samples=MIN_SAMPLES).fit(X).labels_)
                   for eps in EPS_GRID}
@@ -163,7 +134,6 @@ def main():
     ).reset_index()
     summary.to_csv(OUT / "e2_summary.csv", index=False)
 
-    # Lưới 5 bộ × 5 thuật toán, seed 0
     fig, axes = plt.subplots(len(DATASETS), len(METHODS), figsize=(18, 17), constrained_layout=True)
     for ri, name in enumerate(DATASETS):
         for ci, method in enumerate(METHODS):
@@ -176,7 +146,6 @@ def main():
     fig.savefig(OUT / "e2_grid.png", dpi=150)
     plt.close(fig)
 
-    # ARI trung bình ± std
     mean = summary.pivot(index="dataset", columns="method", values="ari_mean").reindex(index=DATASETS, columns=METHODS)
     std = summary.pivot(index="dataset", columns="method", values="ari_std").reindex(index=DATASETS, columns=METHODS)
     fig, ax = plt.subplots(figsize=(13, 5), constrained_layout=True)

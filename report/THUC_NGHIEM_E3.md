@@ -1,8 +1,5 @@
 # Thực nghiệm E3 — Tốc độ và bộ nhớ
 
-<!-- Mục 5 (Nhận xét) và một số chỉnh sửa ở mục 4, 7 được viết tay sau khi chạy.
-     Chạy lại experiments/e3_runtime.py sẽ ghi đè toàn bộ file này. -->
-
 ## 1. Mục tiêu
 Trả lời RQ3: KD-Tree và bin seeding giảm chi phí tính toán bao nhiêu, và trong điều kiện nào?
 

@@ -1,40 +1,3 @@
-#!/usr/bin/env python3
-"""E3: Tốc độ & bộ nhớ
-
-Người phụ trách: C  ·  Branch: e3-runtime
-
-Thiết lập:
----------
-- Sinh dữ liệu ngay trong script: make_blobs(n, centers=5, cluster_std=1.0, random_state=0), d = 2.
- * Theo n: n ∈ {500, 1.000, 2.000, 5.000, 10.000, 20.000, 50.000}. h cố định = estimate_bandwidth tính một lần trên mẫu 2.000 điểm (để chỉ n thay đổi).
- * Theo h: n = 5.000, h = α·h₀ với α ∈ {0.25, 0.5, 1, 2}.
-- Các bản cần đo:
-    custom brute · custom kdtree · custom kdtree + bin_seeding
-    sklearn MeanShift(n_jobs=1) · sklearn + bin_seeding
-- Thời gian: trung vị 3 lần. Bộ nhớ đỉnh: tracemalloc (bắt đầu trước fit, lấy get_traced_memory()[1]).
-- Giới hạn: lần chạy nào > 10 phút thì bỏ các n lớn hơn của bản đó, ghi "quá thời gian" vào CSV.
-- Ghi cấu hình máy (CPU, RAM, phiên bản Python/NumPy/sklearn) vào env.txt.
-- Nhận xét: KD-Tree nhanh hơn brute từ n bao nhiêu; khi h lớn KD-Tree còn lợi không; bin seeding giảm số seed và thời gian bao nhiêu.
-
-Đầu ra
---------------------
-    results/e3/e3_runs.csv
-    Mỗi dòng: thí nghiệm (n / h), n, h, bản, lần lặp, thời gian (s), bộ nhớ đỉnh (MB), số seed, số cụm
-    results/e3/e3_summary.csv
-    Trung vị thời gian, bộ nhớ theo (n, bản) và (h, bản); hệ số tăng tốc so với brute
-    results/e3/e3_time_vs_n.png
-    Thời gian theo n, trục log–log, mỗi bản 1 đường
-    results/e3/e3_memory_vs_n.png
-    Bộ nhớ đỉnh theo n
-    results/e3/e3_time_vs_h.png
-    Thời gian theo h (n = 5.000)
-    results/e3/env.txt
-    Cấu hình máy và phiên bản thư viện
-    report/THUC_NGHIEM_E3.md
-    Kết luận RQ3
-"""
-
-
 from __future__ import annotations
 
 import argparse
@@ -131,7 +94,7 @@ def _read_cpu_name() -> str:
 
 def _read_ram_gb() -> float | None:
     try:
-        import psutil  # optional; do not require it for the benchmark
+        import psutil
         return psutil.virtual_memory().total / (1024 ** 3)
     except ImportError:
         pass
@@ -209,7 +172,6 @@ def write_environment(out_dir: Path) -> dict[str, Any]:
 
 
 def _estimate_seed_count(X: np.ndarray, h: float, method: str) -> int:
-    """Return n or the number of binned starting seeds, when available."""
     uses_bin = method in {"custom_kdtree_bin", "sklearn_bin"}
     if not uses_bin:
         return int(len(X))
@@ -222,7 +184,6 @@ def _estimate_seed_count(X: np.ndarray, h: float, method: str) -> int:
         seeds = get_bin_seeds(X, bin_size=h, min_bin_freq=1)
         return int(len(seeds))
     except Exception:
-        # Benchmark should still run if an implementation exposes a different helper.
         return -1
 
 
@@ -234,7 +195,6 @@ def _mean_neighbor_stats(stats: dict[str, Any]) -> tuple[int, float]:
 
 
 def _record_sklearn_neighbor_rows(stats: dict[str, Any], rows: Any) -> None:
-    """Aggregate lengths of the neighbor index arrays returned by sklearn."""
     try:
         for row in rows:
             try:
@@ -253,15 +213,7 @@ def _record_sklearn_neighbor_rows(stats: dict[str, Any], rows: Any) -> None:
 
 
 def _record_custom_neighbor_result(stats: dict[str, Any], result: Any) -> None:
-    """Count neighbors returned by the custom API: [(idx, sq_dist), ...].
-
-    In MeanShiftCustom._shift_seeds, query_radius is called with a batch of
-    active seeds. Therefore each pair in the returned list corresponds to one
-    seed-query, and len(pair[0]) is that query's number of neighbors.
-    """
     try:
-        # Support both the documented batched form (list of pairs) and a
-        # single-query pair (idx, sq_dist), should a backend return that form.
         if isinstance(result, tuple) and len(result) == 2:
             rows = [result]
         elif isinstance(result, list):
@@ -280,7 +232,6 @@ def _record_custom_neighbor_result(stats: dict[str, Any], result: Any) -> None:
             stats["neighbor_count_sum"] += int(neighbor_count)
             stats["neighbor_queries"] += 1
     except Exception:
-        # Counters are diagnostic only; do not make them break a model fit.
         pass
 
 
@@ -326,12 +277,6 @@ def _fit_worker(
     cfg: dict[str, Any],
     measurement: str,
 ) -> None:
-    """Run one isolated fit for one measurement type.
-
-    measurement='time': no tracemalloc and no instrumentation wrappers.
-    measurement='memory': tracemalloc only; no instrumentation wrappers.
-    measurement='diagnostics': neighbor/iteration wrappers only; no tracemalloc.
-    """
     import tracemalloc
 
     try:
@@ -341,7 +286,6 @@ def _fit_worker(
         with warnings.catch_warnings():
             warnings.simplefilter("default")
             estimator = _make_estimator(method, h, cfg)
-            # This bookkeeping is outside the timed/memory-traced fit.
             n_seeds = _estimate_seed_count(X, h, method)
             stats: dict[str, Any] = {
                 "neighbor_queries": 0,
@@ -349,9 +293,6 @@ def _fit_worker(
                 "iterations": [],
             }
             restore_actions = []
-
-            # Instrument radius queries ONLY for the diagnostic pass. These
-            # wrappers must not affect either runtime or memory measurements.
             if measurement == "diagnostics" and method.startswith("custom"):
                 try:
                     neighbor_module = importlib.import_module("meanshift.neighbors")
@@ -371,7 +312,6 @@ def _fit_worker(
                 except Exception:
                     pass
             elif measurement == "diagnostics" and method in {"sklearn", "sklearn_bin"}:
-                # sklearn's MeanShift uses radius_neighbors inside each seed trajectory.
                 try:
                     sk_ms = importlib.import_module("sklearn.cluster._mean_shift")
                     nn_cls = sk_ms.NearestNeighbors
@@ -401,7 +341,6 @@ def _fit_worker(
                 except Exception:
                     pass
 
-            # Start the timeout clock immediately before the requested measurement.
             conn.send({"event": "started"})
             elapsed = float("nan")
             peak_bytes = float("nan")
@@ -434,9 +373,6 @@ def _fit_worker(
                     n_clusters = int(len(np.unique(labels[labels >= 0])))
 
             mean_iterations = float("nan")
-            # MeanShiftCustom exposes per-seed iteration counts. sklearn's n_iter_
-            # is the MAX over seeds, so it is not used as a mean; sklearn per-seed
-            # counts come from stats["iterations"] in the diagnostic pass only.
             per_seed_iterations = getattr(estimator, "seed_n_iter_", None)
             if per_seed_iterations is not None:
                 try:
@@ -449,8 +385,6 @@ def _fit_worker(
                 mean_iterations = float(np.mean(stats["iterations"]))
 
             n_queries, mean_neighbors = _mean_neighbor_stats(stats)
-            # Do not populate metrics from a measurement pass that was not
-            # designed to estimate them.
             if measurement != "diagnostics":
                 n_queries, mean_neighbors = 0, float("nan")
             if measurement != "memory":
@@ -505,13 +439,6 @@ def fit_with_timeout(
     timeout_seconds: float,
     measurement: str = "time",
 ) -> dict[str, Any]:
-    """Run one measurement in a child process and enforce its timeout.
-
-    On Windows, a child process may close its pipe before the parent polls it.
-    Connection.poll() can then raise BrokenPipeError/EOFError instead of simply
-    returning False. Treat that as a worker communication failure and report it
-    in the CSV, rather than crashing the entire benchmark.
-    """
     ctx = mp.get_context("spawn")
     parent_conn, child_conn = ctx.Pipe(duplex=False)
     proc = ctx.Process(
@@ -555,8 +482,6 @@ def fit_with_timeout(
                 break
 
         proc.join(timeout=1)
-
-        # Drain any result message that was sent just before the child exited.
         while True:
             try:
                 ready = parent_conn.poll(0)
@@ -677,7 +602,6 @@ def _append_result_row(writer, file_obj, all_rows, experiment, n, h, alpha,
 
 def _append_skipped_config(writer, file_obj, all_rows, experiment, n, h, alpha,
                            method, random_state, repeats, reason):
-    """Write explicit placeholders for all planned measurement types."""
     for repeat in range(1, repeats + 1):
         _append_result_row(
             writer, file_obj, all_rows, experiment, n, h, alpha, method,
@@ -694,10 +618,6 @@ def _append_skipped_config(writer, file_obj, all_rows, experiment, n, h, alpha,
 
 def _run_one_config(writer, file_obj, all_rows, X, cfg, experiment, n, h, alpha,
                     method, random_state, repeats, timeout):
-    """Time N uninstrumented fits, then one memory fit, then one diagnostics fit.
-
-    Returns True when a timeout requires skipping larger n (or larger alpha).
-    """
     for repeat in range(1, repeats + 1):
         result = fit_with_timeout(X, method, h, cfg, timeout, measurement="time")
         _append_result_row(
@@ -725,7 +645,6 @@ def _run_one_config(writer, file_obj, all_rows, X, cfg, experiment, n, h, alpha,
                 )
             return True
 
-    # Memory is measured in a separate fit, with tracemalloc but no counters/wrappers.
     mem_result = fit_with_timeout(X, method, h, cfg, timeout, measurement="memory")
     _append_result_row(
         writer, file_obj, all_rows, experiment, n, h, alpha, method,
@@ -743,12 +662,7 @@ def _run_one_config(writer, file_obj, all_rows, X, cfg, experiment, n, h, alpha,
             "diagnostics", 0, random_state,
             _skipped_result("skipped_after_timeout", "bỏ phép đo chẩn đoán sau timeout đo bộ nhớ"),
         )
-        # Lượt đo bộ nhớ chậm hơn vì tracemalloc; timeout ở đây không có nghĩa
-        # fit thật quá 10 phút, nên KHÔNG bỏ các n/alpha lớn hơn.
         return False
-
-    # Neighbor and sklearn per-seed iteration instrumentation is isolated from
-    # both official time and memory figures to avoid measurement overhead.
     diag_result = fit_with_timeout(X, method, h, cfg, timeout, measurement="diagnostics")
     _append_result_row(
         writer, file_obj, all_rows, experiment, n, h, alpha, method,
@@ -760,7 +674,6 @@ def _run_one_config(writer, file_obj, all_rows, X, cfg, experiment, n, h, alpha,
         f"mean_neighbors={diag_result['mean_neighbors_per_query'] if math.isfinite(float(diag_result['mean_neighbors_per_query'])) else 'NA'}",
         flush=True,
     )
-    # Chỉ timeout ở lượt đo thời gian (xử lý ở trên) mới bỏ các n/alpha lớn hơn.
     return False
 
 
@@ -845,8 +758,6 @@ def summarize(raw_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if values.size == 0:
             return (float("nan"),) * 4
         median = float(np.percentile(values, 50))
-        # Memory is measured once per configuration; do not imply that its
-        # quartiles/IQR are meaningful with a single observation.
         if values.size == 1:
             return median, float("nan"), float("nan"), float("nan")
         q1, q3 = np.percentile(values, [25, 75])
@@ -931,8 +842,6 @@ def create_plots(summary_rows: list[dict[str, Any]], out_dir: Path) -> None:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-
-    # Runtime vs n: log-log. Use n sweep rows only.
     fig, ax = plt.subplots(figsize=(9, 6))
     drew = False
     for method in METHODS:
@@ -952,8 +861,6 @@ def create_plots(summary_rows: list[dict[str, Any]], out_dir: Path) -> None:
     fig.tight_layout()
     fig.savefig(out_dir / "e3_time_vs_n.png", dpi=150)
     plt.close(fig)
-
-    # Peak traced memory vs n.
     fig, ax = plt.subplots(figsize=(9, 6))
     drew = False
     for method in METHODS:
@@ -974,8 +881,6 @@ def create_plots(summary_rows: list[dict[str, Any]], out_dir: Path) -> None:
     fig.tight_layout()
     fig.savefig(out_dir / "e3_memory_vs_n.png", dpi=150)
     plt.close(fig)
-
-    # Runtime vs h at fixed n.
     fig, ax = plt.subplots(figsize=(9, 6))
     drew = False
     for method in METHODS:
@@ -1025,33 +930,7 @@ def write_report(report_path: Path, cfg: dict[str, Any], h0: float, env: dict[st
         except (TypeError, ValueError):
             return "—"
 
-    lines = [
-        "# Thực nghiệm E3 — Tốc độ và bộ nhớ",
-        "",
-        "## 1. Mục tiêu",
-        "Trả lời RQ3: KD-Tree và bin seeding giảm chi phí tính toán bao nhiêu, và trong điều kiện nào?",
-        "",
-        "## 2. Cấu hình thực nghiệm",
-        f"- Dữ liệu: `make_blobs`, centers={cfg['dataset'].get('centers', 5)}, cluster_std={cfg['dataset'].get('cluster_std', 1.0)}, d={cfg['dataset'].get('dimensions', 2)}, random_state={cfg['dataset'].get('random_state', 0)}.",
-        f"- Bandwidth tham chiếu: h0={h0:.8g}, ước lượng một lần trên mẫu n={cfg['dataset'].get('reference_n', 2000)} điểm với quantile={cfg['dataset'].get('bandwidth_quantile', 0.1)}.",
-        f"- Quét n: {', '.join(str(x) for x in n_values)}; giữ h=h0.",
-        f"- Quét h: n={h_sweep['n']}; alpha={', '.join(str(a) for a in alphas)}; h=alpha*h0.",
-        f"- Số lượt đo thời gian mỗi cấu hình: {repeats}; timeout: {timeout:g} giây cho từng lượt fit.",
-        "- Các biến thể: Custom brute; Custom KD-Tree; Custom KD-Tree + bin seeding; sklearn MeanShift (bin seeding off/on, n_jobs=1).",
-        "- **Thời gian:** `time.perf_counter()` quanh `fit(X)`, lặp N lần, không bật `tracemalloc` và không gắn wrapper thống kê; báo cáo median và IQR.",
-        "- **Bộ nhớ:** một lượt `fit(X)` riêng cho mỗi cấu hình, bật `tracemalloc` ngay trước fit và không gắn wrapper thống kê. IQR bộ nhớ không báo cáo khi chỉ có một quan sát.",
-        "- **Chẩn đoán:** một lượt fit riêng không bật `tracemalloc`; chỉ lượt này gắn wrapper để đếm truy vấn/láng giềng và số vòng lặp. Thời gian của lượt chẩn đoán không dùng trong benchmark.",
-        f"- Môi trường: CPU {env['cpu']}; RAM tổng (GB) {env['ram_gb']}; Python {env['python']}; NumPy {env['numpy']}; SciPy {env['scipy']}; scikit-learn {env['scikit_learn']}.",
-        "",
-        "## 3. Kết quả tóm tắt",
-        "Bảng chi tiết nằm ở `../results/e3/e3_summary.csv`; từng phép đo nằm ở `../results/e3/e3_runs.csv` (không commit theo quy ước nhóm).",
-        "",
-        "### 3.1. Thời gian, bộ nhớ và số cụm theo n",
-        "Bảng có cột **Số cụm trung vị** để kiểm tra bandwidth có đang gộp quá nhiều cụm hay không.",
-        "",
-        "| n | Phương pháp | Median thời gian (s) | IQR thời gian (s) | Bộ nhớ đỉnh (MB) | Số cụm trung vị | Số seed trung vị | Láng giềng TB/truy vấn | Vòng lặp TB |",
-        "|---:|---|---:|---:|---:|---:|---:|---:|---:|",
-    ]
+    lines = []
     for n in n_values:
         for method in METHODS:
             r = _summary_value(summary_rows, "n", method, n=int(n))
@@ -1064,12 +943,7 @@ def write_report(report_path: Path, cfg: dict[str, Any], h0: float, env: dict[st
             else:
                 lines.append(f"| {int(n)} | {METHOD_LABELS[method]} | — | — | — | — | — | — | — |")
 
-    lines.extend([
-        "",
-        "### 3.2. Thời gian, bộ nhớ và số cụm theo h",
-        "| alpha | h | Phương pháp | Median thời gian (s) | IQR thời gian (s) | Bộ nhớ đỉnh (MB) | Số cụm trung vị | Số seed trung vị | Láng giềng TB/truy vấn | Vòng lặp TB |",
-        "|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|",
-    ])
+    lines.extend([])
     for alpha in alphas:
         h = float(alpha) * h0
         for method in METHODS:
@@ -1120,16 +994,7 @@ def write_report(report_path: Path, cfg: dict[str, Any], h0: float, env: dict[st
                 alpha: float | None = None) -> dict[str, Any] | None:
         return _summary_value(summary_rows, experiment, method, n=n, alpha=alpha)
 
-    # 4.1 — Compare KD-Tree and brute at every comparable n, rather than only
-    # announcing the first crossover point.
-    lines.extend([
-        "",
-        "### 4.1. KD-Tree bắt đầu nhanh hơn brute ở n nào?",
-        "Tốc độ tương đối được tính bằng `median_time(brute) / median_time(KD-Tree)`. Giá trị > 1 nghĩa là KD-Tree nhanh hơn; giá trị < 1 nghĩa là KD-Tree chậm hơn trong cấu hình và môi trường đã đo.",
-        "",
-        "| n | Brute median (s) | KD-Tree median (s) | Brute/KD-Tree (×) | Láng giềng TB/truy vấn của KD-Tree |",
-        "|---:|---:|---:|---:|---:|",
-    ])
+    lines.extend([])
     comparable_n: list[tuple[int, float, float, dict[str, Any], dict[str, Any]]] = []
     for n in sorted({int(float(v)) for v in n_values}):
         brute = get_row("n", "custom_brute", n=n)
@@ -1154,7 +1019,6 @@ def write_report(report_path: Path, cfg: dict[str, Any], h0: float, env: dict[st
         else:
             reversed_ns = [n for n, brute_t, kd_t, _, _ in later if kd_t >= brute_t]
             threshold_note = (
-                "nhưng lợi thế không duy trì ở mọi mức n lớn hơn; KD-Tree không nhanh hơn brute tại n="
                 + ", ".join(f"{n:,}" for n in reversed_ns)
             )
         lines.append(
@@ -1183,7 +1047,6 @@ def write_report(report_path: Path, cfg: dict[str, Any], h0: float, env: dict[st
     else:
         lines.append("\n**Kết quả:** chưa đủ ít nhất hai mức n có thời gian hợp lệ cho cả brute và KD-Tree để xác định điểm giao hoặc đánh giá khả năng mở rộng.")
 
-    # Empirical log-log slopes only use successful time measurements.
     slopes = []
     for method in METHODS:
         rows = [r for r in summary_rows if r.get("experiment") == "n" and r.get("method") == method
@@ -1204,7 +1067,6 @@ def write_report(report_path: Path, cfg: dict[str, Any], h0: float, env: dict[st
     else:
         lines.append("Chưa đủ ít nhất hai mức n hợp lệ cho một phương pháp để ước lượng độ dốc.")
 
-    # 4.2 — Describe bandwidth trends from measured neighborhood and timing values.
     lines.extend([
         "",
         "### 4.2. Khi h tăng, số láng giềng và thời gian thay đổi thế nào?",
@@ -1268,15 +1130,7 @@ def write_report(report_path: Path, cfg: dict[str, Any], h0: float, env: dict[st
         lines.append("Chưa đủ dữ liệu thời gian của KD-Tree qua nhiều mức alpha để kết luận xu hướng.")
     lines.append("Số láng giềng lớn hơn có thể làm giảm lợi thế của KD-Tree vì truy vấn cần trả về nhiều điểm hơn; chỉ kết luận cơ chế này phù hợp với kết quả nếu số láng giềng thực đo và thời gian cùng ủng hộ nhận xét, không suy ra quan hệ nhân quả chỉ từ lý thuyết.")
 
-    # 4.3 — Report the bin-seeding effect at every comparable n, not just the best case.
-    lines.extend([
-        "",
-        "### 4.3. Bin seeding giảm bao nhiêu seed và thời gian?",
-        "So sánh `custom_kdtree_bin` với `custom_kdtree` tại cùng n và h. Phần trăm tiết kiệm seed = (seed không bin − seed có bin) / seed không bin; phần trăm tiết kiệm thời gian được tính tương tự. Số âm nghĩa là cấu hình có bin seeding tốn nhiều tài nguyên/thời gian hơn ở phép đo đó.",
-        "",
-        "| n | Seed không bin | Seed có bin | Seed giảm | Seed giảm (%) | Số cụm không bin | Số cụm có bin | Thời gian không bin (s) | Thời gian có bin (s) | Thời gian tiết kiệm (s) | Thời gian tiết kiệm (%) | Speedup có bin (×) |",
-        "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
-    ])
+    lines.extend([])
     bin_rows: list[dict[str, float]] = []
     for n in sorted({int(float(v)) for v in n_values}):
         kd = get_row("n", "custom_kdtree", n=n)
@@ -1289,7 +1143,6 @@ def write_report(report_path: Path, cfg: dict[str, Any], h0: float, env: dict[st
             continue
         seed_saved = (s0 - s1) if s0 is not None and s1 is not None else None
         seed_pct = pct_change(s0, s1) if s0 is not None and s0 > 0 and s1 is not None else None
-        # pct_change returns new-old; invert to express savings as positive values.
         seed_pct_saved = -seed_pct if seed_pct is not None else None
         seconds_saved = t0 - t1
         time_pct_saved = (seconds_saved / t0 * 100.0) if t0 > 0 else None
@@ -1335,27 +1188,7 @@ def write_report(report_path: Path, cfg: dict[str, Any], h0: float, env: dict[st
         lines.append("Cần đọc đồng thời cột số cụm: giảm seed/tăng tốc không tự động có nghĩa là kết quả phân cụm giữ nguyên. Bảng E3 ghi số cụm để đối chiếu; đánh giá sai khác chất lượng phân cụm chi tiết thuộc các thực nghiệm phù hợp như E1/E6.")
     else:
         lines.append("Chưa đủ các cặp thời gian hợp lệ của KD-Tree có/không bin seeding để định lượng mức giảm. Xem trạng thái timeout/error trong `e3_runs.csv`.")
-    lines.extend([
-        "",
-        "## 5. Biểu đồ",
-        "- `../results/e3/e3_time_vs_n.png` — thời gian theo n, trục log–log.",
-        "- `../results/e3/e3_memory_vs_n.png` — bộ nhớ đỉnh theo n.",
-        "- `../results/e3/e3_time_vs_h.png` — thời gian theo h.",
-        "",
-        "## 6. Giới hạn và lưu ý diễn giải",
-        "- `tracemalloc` ghi nhận bộ nhớ Python-traced; có thể không bao quát đầy đủ bộ nhớ native do NumPy, SciPy, KD-Tree hoặc sklearn cấp phát. Không diễn giải số đo này như RSS tổng của tiến trình.",
-        "- Thời gian báo cáo chỉ lấy từ các lượt fit không bật tracemalloc và không gắn wrapper. Lượt đo bộ nhớ và lượt chẩn đoán là các lần fit riêng; thời gian của chúng không tham gia tính median thời gian.",
-        "- Bộ nhớ được đo một lần riêng cho mỗi cấu hình. Do chỉ có một quan sát, median được báo cáo nhưng Q1/Q3/IQR bộ nhớ để trống.",
-        "- Các lượt timeout/skip được ghi trong CSV; chúng không được dùng để tính median thời gian thành công.",
-        "- Số láng giềng và vòng lặp lấy từ lượt chẩn đoán. Nếu API thư viện thay đổi khiến không thu được số liệu, để trống/NA thay vì tự suy ra.",
-        "- Số cụm được lấy từ `len(cluster_centers_)` sau mỗi lượt fit; cần đọc cột này cùng bandwidth h để xác định liệu các cụm có bị gộp quá mức hay không.",
-        "",
-        "## 7. File đầu ra",
-        "- `../results/e3/e3_runs.csv` — dữ liệu từng phép đo, có cột `measurement` (`time`, `memory`, `diagnostics`).",
-        "- `../results/e3/e3_summary.csv` — median/Q1/Q3/IQR cho thời gian, peak memory khi có đủ quan sát, speedup so với custom brute và số cụm trung vị.",
-        "- `../results/e3/env.txt` và `../results/e3/e3_metadata.json` — môi trường và cấu hình chạy.",
-        "",
-    ])
+    lines.extend([])
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 def main() -> int:
@@ -1399,7 +1232,6 @@ def main() -> int:
             repeats = 1
         timeout = min(timeout, 60.0)
 
-    # Keep h fixed during the n sweep: estimate it once on a separate 2,000-point sample.
     from meanshift import estimate_bandwidth
     ds = cfg["dataset"]
     reference_n = int(ds.get("reference_n", 2000))

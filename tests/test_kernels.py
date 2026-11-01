@@ -1,7 +1,3 @@
-"""Test cho meanshift/kernels.py — người phụ trách: B.
-
-Đây là vài test MẪU để bắt đầu; B bổ sung thêm test của mình.
-"""
 import numpy as np
 import pytest
 
@@ -31,8 +27,6 @@ def test_make_kernel():
     with pytest.raises(ValueError):
         make_kernel("abc")
 
-
-# ---- Test bổ sung (B) ----
 
 def test_flat_weights_shape_and_dtype():
     sq = np.array([0.0, 2.0, 5.0, 9.0])

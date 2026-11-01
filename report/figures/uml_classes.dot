@@ -1,5 +1,3 @@
-// Sơ đồ lớp UML của package meanshift.
-// Vẽ lại: dot -Tpng -Gdpi=200 report/figures/uml_classes.dot -o report/figures/uml_classes.png
 digraph UML {
   graph [rankdir=BT, fontname="Arial", nodesep=0.5, ranksep=0.75, bgcolor="white", pad=0.3];
   node  [shape=plain, fontname="Arial", fontsize=11];
@@ -111,20 +109,17 @@ digraph UML {
       </td></tr>
     </table>>];
 
-  // Kế thừa
   MeanShiftCustom -> BaseClusterer [arrowhead=onormal, arrowsize=1.2];
   FlatKernel      -> Kernel        [arrowhead=onormal, arrowsize=1.2];
   GaussianKernel  -> Kernel        [arrowhead=onormal, arrowsize=1.2];
   BruteForceSearch -> NeighborSearch [arrowhead=onormal, arrowsize=1.2];
   KDTreeSearch     -> NeighborSearch [arrowhead=onormal, arrowsize=1.2];
 
-  // Hợp thành: MeanShiftCustom giữ 1 Kernel (_kernel) và 1 NeighborSearch (_search)
   Kernel         -> MeanShiftCustom [arrowhead=diamond, arrowsize=1.2,
                                      taillabel="_kernel  1", labeldistance=3, labelangle=-45];
   NeighborSearch -> MeanShiftCustom [arrowhead=diamond, arrowsize=1.2,
                                      taillabel="1  _search", labeldistance=3, labelangle=45];
 
-  // Phụ thuộc
   MeanShiftCustom -> Utils [style=dashed, arrowhead=vee, label=" «use»"];
 
   { rank=same; Kernel; NeighborSearch; }

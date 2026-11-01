@@ -1,7 +1,3 @@
-"""Hình trực quan hoá 5 bộ dữ liệu tổng hợp (seed 0) dùng trong E1–E4, E6.
-
-Chạy: python3 experiments/fig_datasets.py  ->  report/figures/datasets.png
-"""
 import matplotlib
 
 matplotlib.use("Agg")
@@ -9,7 +5,6 @@ import matplotlib.pyplot as plt
 
 from common import DATASETS, ROOT, TRUE_K, load_synthetic
 
-# Cách sinh của từng bộ (theo data/make_synthetic.py)
 DESCRIPTIONS = {
     "blobs": "4 cụm Gauss, std = 0.6",
     "blobs_varied": "3 cụm, std = 0.5 / 1.5 / 2.5",

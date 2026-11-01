@@ -15,7 +15,6 @@ from meanshift.neighbors import make_neighbor_search
 
 
 def params(func):
-    """{tên tham số: giá trị mặc định (hoặc None nếu không có)} — bỏ self."""
     return {
         name: (None if p.default is inspect.Parameter.empty else p.default)
         for name, p in inspect.signature(func).parameters.items()

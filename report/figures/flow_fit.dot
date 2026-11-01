@@ -1,5 +1,3 @@
-// Sơ đồ luồng thực thi MeanShiftCustom.fit(X).
-// Vẽ lại: dot -Tpng -Gdpi=200 report/figures/flow_fit.dot -o report/figures/flow_fit.png
 digraph FIT {
   graph [rankdir=TB, fontname="Arial", nodesep=0.45, ranksep=0.4, bgcolor="white", pad=0.3, newrank=true];
   node  [fontname="Arial", fontsize=11, style="filled", fillcolor="#EAF1FB", shape=box, margin="0.15,0.07"];

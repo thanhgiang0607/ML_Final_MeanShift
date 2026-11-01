@@ -1,4 +1,3 @@
-"""Đối chiếu MeanShiftCustom với sklearn.cluster.MeanShift — người phụ trách: E."""
 import numpy as np
 import pytest
 from sklearn.cluster import MeanShift
@@ -52,7 +51,6 @@ def test_cluster_all_false_keeps_orphans_but_predict_assigns_nearest():
 
 
 def test_tied_modes_merge_and_iteration_count_obeys_limit():
-    # Duplicate points create tied modes; check invariants, not tied-center order.
     X = np.repeat(np.array([[0.0, 0.0], [3.0, 0.0]]), [8, 8], axis=0)
     model = MeanShiftCustom(bandwidth=0.4, max_iter=2).fit(X)
     assert len(model.cluster_centers_) == 2

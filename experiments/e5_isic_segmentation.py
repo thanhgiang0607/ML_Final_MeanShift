@@ -1,27 +1,3 @@
-"""E5 – Phân đoạn tổn thương da ISIC 2018 bằng Mean-Shift và so với baseline (RQ5).
-
-Người phụ trách: A  ·  Branch: e5-isic
-
-6 phương pháp, cùng một quy trình (isic_utils): ảnh -> đặc trưng -> nhãn cụm -> labels_to_mask -> Dice/IoU.
-    otsu      Otsu trên kênh L                       (isic_baselines, không có tham số)
-    kmeans    K-Means k = 2 trên 3D Lab              (isic_baselines)
-    gmm       GMM k = 2 trên 3D Lab                  (isic_baselines)
-    ms_rgb3   Mean-Shift 3D RGB, h đơn vị 0–255      (chỉnh h trên tune)
-    ms_lab3   Mean-Shift 3D Lab, h = 8               (lấy từ E4: results/e4/best_h_3d_lab.json)
-    ms_lab5   Mean-Shift 5D (x/hs, y/hs, Lab/hr), bandwidth = 1   (chỉnh hs, hr trên tune)
-Mean-Shift luôn là MeanShiftCustom(kernel phẳng, KD-Tree, bin_seeding=True).
-
-Chạy (cần python3 data/download_isic.py trước):
-    python3 experiments/e5_isic_segmentation.py --stage tune   # 100 ảnh tune, ~25 phút (Apple M1)
-    python3 experiments/e5_isic_segmentation.py --stage test   # 200 ảnh test, CHẠY 1 LẦN sau khi chốt tham số
-    thêm --quick: 10 ảnh, ghi ra thư mục tạm (không đụng results/e5/)
-
-Đầu ra (results/e5/):
-  tune: e5_tune_runs.csv (không lên git), e5_tune_summary.csv, e5_best_params.json
-  test: e5_test_runs.csv (không lên git), e5_test_summary.csv, e5_wilcoxon.csv, e5_vs_sklearn.csv,
-        e5_dice_box.png, e5_examples.png, e5_failures.png
-  e5_metadata.json (cấu hình, phiên bản, SHA256 file chia tập)
-"""
 import argparse
 import hashlib
 import json
@@ -46,10 +22,10 @@ from sklearn.metrics import adjusted_rand_score
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from isic_baselines import gmm_labels, kmeans_labels, otsu_labels  # noqa: E402
-from isic_utils import (BORDER_SHARE, BORDER_WIDTH, MAX_SIDE, MIN_AREA, SPLITS,  # noqa: E402
+from isic_baselines import gmm_labels, kmeans_labels, otsu_labels
+from isic_utils import (BORDER_SHARE, BORDER_WIDTH, MAX_SIDE, MIN_AREA, SPLITS,
                         dice, features, iou, labels_to_mask, load_image, load_split)
-from meanshift import MeanShiftCustom  # noqa: E402
+from meanshift import MeanShiftCustom
 
 E4_BEST = ROOT / "results" / "e4" / "best_h_3d_lab.json"
 OUT = ROOT / "results" / "e5"
@@ -59,23 +35,17 @@ MS_METHODS = ["ms_rgb3", "ms_lab3", "ms_lab5"]
 NAMES = {"otsu": "Otsu (L)", "kmeans": "K-Means k=2", "gmm": "GMM k=2",
          "ms_rgb3": "MS 3D RGB", "ms_lab3": "MS 3D Lab", "ms_lab5": "MS 5D Lab"}
 
-# Lưới chỉnh trên tune. RGB: 1 đơn vị Lab ~ 2–3 đơn vị RGB, nên lưới dời lên so với lưới Lab của E4
-# (h = 8 RGB bỏ vì ra hàng trăm cụm và chậm ~2 s/ảnh).
 RGB_HS = [12, 16, 20, 24, 32, 40, 48]
-LAB5_HS = [8, 16, 32, 64]   # thang không gian (pixel); thêm 64 vì bản thử 10 ảnh cho tốt nhất ở mép lưới (32)
-LAB5_HR = [4, 8, 12, 16, 20]   # thang màu (đơn vị Lab); thêm 16, 20 vì tune 100 ảnh với {4, 8, 12} cho tốt nhất ở mép (12)
+LAB5_HS = [8, 16, 32, 64]
+LAB5_HR = [4, 8, 12, 16, 20]
 
 QUICK_IMAGES = 10
-TEST_REPEAT = 3          # test: đo thời gian 3 lần, lấy trung vị (tune chỉ đo 1 lần)
-N_SKLEARN = 20           # số ảnh test so với sklearn.cluster.MeanShift
-N_FAILURES = 8           # số ảnh tệ nhất trong e5_failures.png
+TEST_REPEAT = 3
+N_SKLEARN = 20
+N_FAILURES = 8
 
 
-# ---------------------------------------------------------------------------
-# Chạy một phương pháp trên một ảnh
-# ---------------------------------------------------------------------------
 def ms_features(rgb, method, params):
-    """(X, bandwidth) cho từng biến thể Mean-Shift."""
     if method == "ms_rgb3":
         return features(rgb, "rgb3"), float(params["h"])
     if method == "ms_lab3":
@@ -86,7 +56,6 @@ def ms_features(rgb, method, params):
 
 
 def compute_labels(rgb, method, params):
-    """Nhãn cụm (H*W,) của một phương pháp; thời gian tính gồm cả bước tạo đặc trưng."""
     if method == "otsu":
         return otsu_labels(rgb)
     if method == "kmeans":
@@ -120,9 +89,6 @@ def params_label(method, params):
     return "-"
 
 
-# ---------------------------------------------------------------------------
-# Giai đoạn tune
-# ---------------------------------------------------------------------------
 def e4_best_h():
     if not E4_BEST.is_file():
         raise FileNotFoundError(f"Thiếu {E4_BEST}. Chạy trước: python3 experiments/e4_isic.py")
@@ -130,7 +96,6 @@ def e4_best_h():
 
 
 def tune_grid():
-    """Danh sách (method, params) cần chạy trên tune."""
     grid = [(m, {}) for m in ("otsu", "kmeans", "gmm")]
     grid += [("ms_rgb3", {"h": h}) for h in RGB_HS]
     grid += [("ms_lab3", {"h": e4_best_h()})]
@@ -164,7 +129,6 @@ def stage_tune(image_ids, out):
     runs.to_csv(out / "e5_tune_runs.csv", index=False)
     summary.to_csv(out / "e5_tune_summary.csv", index=False)
 
-    # Tham số tốt nhất = Dice trung bình cao nhất trên tune, cho mỗi phương pháp
     by_label = {(m, params_label(m, p)): p for m, p in grid}
     best = {}
     for method in METHODS:
@@ -186,9 +150,6 @@ def stage_tune(image_ids, out):
     print(f"Mean-Shift tốt nhất trên tune: {NAMES[ms_best]}")
 
 
-# ---------------------------------------------------------------------------
-# Giai đoạn test
-# ---------------------------------------------------------------------------
 def load_best(out):
     path = out / "e5_best_params.json"
     if not path.is_file():
@@ -197,10 +158,6 @@ def load_best(out):
 
 
 def wilcoxon_table(runs, ms_best):
-    """Wilcoxon cặp (cùng ảnh) giữa Mean-Shift tốt nhất (chọn trên tune) và từng phương pháp còn lại.
-
-    Hai phía; p-value hiệu chỉnh Holm cho 5 phép so sánh.
-    """
     pivot = runs.pivot(index="image_id", columns="method", values="dice")
     rows = []
     for other in METHODS:
@@ -209,7 +166,7 @@ def wilcoxon_table(runs, ms_best):
         diff = pivot[ms_best] - pivot[other]
         try:
             stat, p = wilcoxon(pivot[ms_best], pivot[other])
-        except ValueError:  # mọi cặp bằng nhau
+        except ValueError:
             stat, p = np.nan, 1.0
         rows.append({"meanshift": ms_best, "other": other,
                      "dice_meanshift": float(pivot[ms_best].mean()), "dice_other": float(pivot[other].mean()),
@@ -217,7 +174,6 @@ def wilcoxon_table(runs, ms_best):
                      "n_better": int((diff > 1e-9).sum()), "n_worse": int((diff < -1e-9).sum()),
                      "n_tie": int((diff.abs() <= 1e-9).sum()), "statistic": float(stat), "p_value": float(p)})
     table = pd.DataFrame(rows)
-    # Holm: nhân p thứ i (tăng dần) với (m - i), lấy max tích luỹ, chặn ở 1
     order = np.argsort(table.p_value.to_numpy())
     m = len(table)
     adjusted = np.empty(m)
@@ -230,7 +186,6 @@ def wilcoxon_table(runs, ms_best):
 
 
 def vs_sklearn(image_ids, best):
-    """So MeanShiftCustom với sklearn.cluster.MeanShift (cùng tham số, bin_seeding=True) trên vài ảnh test."""
     rows = []
     for image_id in image_ids:
         rgb, gt = load_image(image_id)
@@ -265,7 +220,6 @@ def plot_box(runs, path, n_images):
 
 
 def mask_panels(image_ids, tags, runs, best, path, title):
-    """Mỗi hàng 1 ảnh: ảnh gốc, mask bác sĩ, mask của 6 phương pháp (kèm Dice)."""
     fig, axes = plt.subplots(len(image_ids), 2 + len(METHODS),
                              figsize=(2.3 * (2 + len(METHODS)), 2.2 * len(image_ids)), squeeze=False)
     for row, image_id, tag in zip(axes, image_ids, tags):
@@ -329,7 +283,6 @@ def stage_test(image_ids, out):
     print(sk.groupby("method")[["ari_labels", "dice_masks"]].agg(["mean", "min"]).round(4).to_string())
 
 
-# ---------------------------------------------------------------------------
 def write_metadata(out, stage, image_ids):
     path = out / "e5_metadata.json"
     meta = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}

@@ -1,10 +1,3 @@
-"""Hình pipeline E5 kiểu bài báo: luồng trái → phải với ảnh minh hoạ thật ở từng bước,
-và dải giao thức đánh giá (tune → chốt tham số → test) ở dưới.
-
-Ảnh minh hoạ lấy từ tập TUNE (không dùng ảnh test), chạy MS 5D Lab với tham số đã chốt.
-
-Chạy: python3 experiments/fig_pipeline_e5.py  ->  report/figures/pipeline_e5.png
-"""
 import json
 import sys
 from pathlib import Path
@@ -21,12 +14,12 @@ from scipy import ndimage
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from isic_utils import (BORDER_SHARE, BORDER_WIDTH, MIN_AREA, border_ring, dice,  # noqa: E402
+from isic_utils import (BORDER_SHARE, BORDER_WIDTH, MIN_AREA, border_ring, dice,
                         features, labels_to_mask, load_image, to_lab)
-from meanshift import MeanShiftCustom  # noqa: E402
+from meanshift import MeanShiftCustom
 
-IMAGE_ID = "ISIC_0036281"   # ảnh tune: có góc tối ống kính bị loại ở bước ①
-W, H = 17.0, 6.8            # khổ hình (inch); toạ độ vẽ tính theo inch
+IMAGE_ID = "ISIC_0036281"
+W, H = 17.0, 6.8
 
 INK = "#222222"
 MUTED = "#666666"
@@ -67,7 +60,6 @@ def thumb(fig, x, y, w, h, img, cmap=None, title=None, contours=()):
 
 
 def mask_steps(labels, rgb):
-    """Tái hiện các bước của labels_to_mask để minh hoạ: (ứng viên, cụm tối nhất, mask cuối)."""
     h, w = rgb.shape[:2]
     labels = labels.reshape(h, w)
     lightness = to_lab(rgb)[..., 0]
@@ -95,7 +87,6 @@ def main():
     d = dice(final, gt)
     k = len(model.cluster_centers_)
 
-    # Bản đồ cụm: mỗi cụm 1 màu; bản đồ ứng viên: cụm bị loại tô xám
     palette = plt.get_cmap("Set2").colors
     cmap = ListedColormap([palette[i % len(palette)] for i in range(k)])
     cand_img = np.ones(labels.shape + (3,)) * 0.85
@@ -106,8 +97,7 @@ def main():
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_xlim(0, W); ax.set_ylim(0, H); ax.axis("off")
 
-    # ---------------- Hàng trên: 5 khối của pipeline ----------------
-    top, ph = 2.05, 4.45          # đáy và chiều cao các khối
+    top, ph = 2.05, 4.45
     cols = [(0.25, 2.3), (2.85, 2.75), (5.9, 3.55), (9.75, 4.6), (14.65, 2.1)]
     heads = ["(a) Đầu vào", "(b) Đặc trưng pixel", "(c) Phân cụm → nhãn từng pixel",
              "(d) Chọn cụm tổn thương (labels_to_mask)", "(e) Đánh giá"]
@@ -119,13 +109,11 @@ def main():
 
     tw, th = 1.9, 1.9 * rgb.shape[0] / rgb.shape[1]
 
-    # (a) Đầu vào
     x, w = cols[0]
     thumb(fig, x + (w - tw) / 2, top + 2.1, tw, th, rgb)
     ax.text(x + w / 2, top + 1.35, "ISIC 2018 Task 1\nẢnh soi da + mask bác sĩ\nthu nhỏ cạnh dài 128 px\n(LANCZOS / NEAREST)",
             ha="center", va="center", fontsize=8.5, color=MUTED, linespacing=1.4)
 
-    # (b) Đặc trưng
     x, w = cols[1]
     feats = [("RGB3", "(R, G, B)"), ("Lab3", "(L*, a*, b*)"),
              ("Lab5", "(x/hs, y/hs,\nL*/hr, a*/hr, b*/hr)"), ("L*", "(1 kênh, cho Otsu)")]
@@ -138,7 +126,6 @@ def main():
         ax.text(x + 0.95, y + hh / 2, desc, fontsize=8.3, va="center", color=MUTED, linespacing=1.3)
         feat_mid[name] = y + hh / 2
 
-    # (c) Phân cụm: 2 nhóm phương pháp + bản đồ cụm minh hoạ
     x, w = cols[2]
     gx, gw = x + 0.15, 1.95
     box(ax, gx, top + 2.05, gw, 1.95, fc=MS_COLOR, ec="#9DB9DC")
@@ -155,13 +142,11 @@ def main():
           title=f"MS-Lab5: {k} cụm")
     ax.text(x + w - 0.77, top + 1.25, "đầu ra: nhãn cụm\ncho từng pixel", fontsize=7.6, ha="center",
             va="center", color=MUTED)
-    # nối đặc trưng → nhóm phương pháp (mũi tên mảnh)
     for name in ("RGB3", "Lab3", "Lab5"):
         arrow(ax, cols[1][0] + cols[1][1] - 0.18, feat_mid[name], gx, top + 2.9, color="#8FA9C9", lw=0.8)
     for name in ("Lab3", "L*"):
         arrow(ax, cols[1][0] + cols[1][1] - 0.18, feat_mid[name], gx, top + 1.0, color="#AAAAAA", lw=0.8)
 
-    # (d) Chọn cụm: 3 bước nhỏ
     x, w = cols[3]
     sw = 1.3
     sh = sw * th / tw
@@ -179,7 +164,6 @@ def main():
     ax.text(x + w / 2, top + 0.55, "Cùng một quy tắc cho cả 6 phương pháp\n→ chênh lệch Dice chỉ do thuật toán",
             fontsize=8.2, ha="center", va="center", color=MUTED, style="italic", linespacing=1.4)
 
-    # (e) Đánh giá
     x, w = cols[4]
     ew = 1.7
     thumb(fig, x + (w - ew) / 2, top + 2.2, ew, ew * th / tw, rgb, contours=[(gt, "lime"), (final, "red")])
@@ -187,7 +171,6 @@ def main():
     ax.text(x + w / 2, top + 1.0, "xanh: bác sĩ · đỏ: dự đoán\n\nDice · IoU\nTỷ lệ thất bại (Dice < 0,1)\nThời gian / ảnh",
             fontsize=7.9, ha="center", va="center", color=MUTED, linespacing=1.35)
 
-    # ---------------- Dải dưới: giao thức đánh giá ----------------
     by, bh = 0.3, 1.2
     ax.text(0.3, by + bh + 0.22, "Giao thức đánh giá", fontsize=10.5, weight="bold", color=INK, va="center")
     specs = [
@@ -200,9 +183,8 @@ def main():
     stages, sx = [], 0.25
     for sw2, fc, text in specs:
         stages.append((sx, sw2, fc, text))
-        sx += sw2 - 0.28 + 0.06   # khối sau lồng vào mũi của khối trước
+        sx += sw2 - 0.28 + 0.06
     for i, (sx, sw2, fc, text) in enumerate(stages):
-        # khối hình mũi tên (chevron)
         tip = 0.28
         pts = [(sx, by), (sx + sw2 - tip, by), (sx + sw2, by + bh / 2), (sx + sw2 - tip, by + bh),
                (sx, by + bh)]

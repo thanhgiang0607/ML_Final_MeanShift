@@ -1,8 +1,3 @@
-"""Sinh 5 bộ dữ liệu giả 2D (có nhãn đúng) cho E1, E2.
-
-Chạy: python3 data/make_synthetic.py
-Kết quả: data/synthetic/<tên>_seed<k>.csv với các cột x, y, label
-"""
 from pathlib import Path
 
 import numpy as np
@@ -18,12 +13,10 @@ def blobs(seed):
 
 
 def blobs_varied(seed):
-    # 3 cụm có độ trải (mật độ) khác nhau
     return make_blobs(n_samples=N, centers=3, cluster_std=[0.5, 1.5, 2.5], random_state=seed)
 
 
 def blobs_aniso(seed):
-    # cụm bị kéo dẹt bằng biến đổi tuyến tính
     X, y = make_blobs(n_samples=N, centers=3, random_state=seed)
     return X @ np.array([[0.6, -0.6], [-0.4, 0.8]]), y
 

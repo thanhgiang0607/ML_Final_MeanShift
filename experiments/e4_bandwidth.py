@@ -1,20 +1,3 @@
-"""E4 phần 1 - Khảo sát độ nhạy của Mean Shift theo bandwidth trên dữ liệu giả lập.
-
-Phần 2 (ảnh ISIC tune) nằm ở experiments/e4_isic.py.
-
-Chạy:
-    python experiments/e4_bandwidth.py
-Chạy nhanh với 1 seed:
-    python experiments/e4_bandwidth.py --seeds 1
-
-Đầu ra (results/e4/):
-    e4_synthetic_runs.csv           mỗi dòng: bộ, seed, alpha, h0, h, số cụm, số cụm thật, ARI, NMI, thời gian
-    e4_synthetic_summary.csv        trung bình ± std qua các seed theo (bộ, alpha)
-    e4_synthetic_alpha_summary.csv  theo từng bộ: alpha tốt nhất, ARI tại alpha = 1, khoảng alpha an toàn
-    e4_synthetic.png                số cụm và ARI theo alpha
-    e4_metadata.json                cấu hình, phiên bản thư viện, SHA256 dữ liệu đầu vào
-"""
-
 import argparse
 import hashlib
 import json
@@ -28,7 +11,6 @@ import pandas as pd
 from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
 from sklearn.preprocessing import StandardScaler
 
-# Thêm thư mục gốc của project vào đường dẫn tìm kiếm module
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -41,30 +23,21 @@ from meanshift.bandwidth import estimate_bandwidth
 from meanshift.core import MeanShiftCustom
 
 
-# 15 giá trị alpha từ 0.1 đến 3 theo thang logarit
 ALPHAS = np.geomspace(0.1, 3.0, 15)
 DEFAULT_SEEDS = list(range(10))
-# Giống E2: h0 = estimate_bandwidth(X, quantile=0.3)
 QUANTILE = 0.3
-# Khoảng alpha "an toàn": ARI trung bình >= SAFE_RATIO × ARI tốt nhất của bộ đó
 SAFE_RATIO = 0.9
 
 
 def load_scaled(dataset, seed):
-    """Đọc dữ liệu synthetic và chuẩn hóa giống thí nghiệm E2."""
     X, y = load_synthetic(dataset, seed)
     X = StandardScaler().fit_transform(X)
     return X, y
 
 
 def run_one(dataset, seed, alpha):
-    """Chạy một cấu hình bandwidth và trả về kết quả."""
     X, y_true = load_scaled(dataset, seed)
-
-    # Bandwidth mặc định được ước lượng từ dữ liệu
     h0 = estimate_bandwidth(X, quantile=QUANTILE)
-
-    # Tránh chạy thuật toán với bandwidth không hợp lệ
     if not np.isfinite(h0) or h0 <= 0:
         raise ValueError(
             f"Bandwidth mặc định không hợp lệ: dataset={dataset}, "
@@ -72,8 +45,6 @@ def run_one(dataset, seed, alpha):
         )
 
     h = float(alpha * h0)
-
-    # Đo thời gian 3 lần, lấy trung vị
     elapsed_times = []
     labels = None
 
@@ -108,7 +79,6 @@ def run_one(dataset, seed, alpha):
 
 
 def summarize_results(runs):
-    """Tổng hợp trung bình và độ lệch chuẩn theo dataset, alpha."""
     summary = (
         runs.groupby(["dataset", "alpha"], as_index=False)
         .agg(
@@ -123,8 +93,6 @@ def summarize_results(runs):
             time_std=("time_seconds", "std"),
         )
     )
-
-    # Với trường hợp chỉ có 1 seed, độ lệch chuẩn là NaN.
     std_columns = [col for col in summary.columns if col.endswith("_std")]
     summary[std_columns] = summary[std_columns].fillna(0)
 
@@ -132,11 +100,6 @@ def summarize_results(runs):
 
 
 def alpha_table(summary):
-    """Theo từng bộ: alpha tốt nhất, ARI tại alpha = 1 và khoảng alpha an toàn.
-
-    Alpha tốt nhất được chọn bằng nhãn thật trên chính các seed đã chạy,
-    nên ARI tốt nhất là cận trên (oracle), không phải kết quả dùng được khi không có nhãn.
-    """
     rows = []
     for dataset in DATASETS:
         data = summary[summary["dataset"] == dataset].sort_values("alpha")
@@ -161,7 +124,6 @@ def alpha_table(summary):
 
 
 def plot_results(summary, output_path):
-    """Vẽ số cụm và ARI theo alpha, trung bình ± độ lệch chuẩn."""
     fig, axes = plt.subplots(1, 2, figsize=(15, 6))
 
     for i, dataset in enumerate(DATASETS):
@@ -169,13 +131,10 @@ def plot_results(summary, output_path):
         data = summary[summary["dataset"] == dataset].sort_values("alpha")
 
         x = data["alpha"].to_numpy()
-
-        # Số cụm trung bình ± độ lệch chuẩn
         y_clusters = data["n_clusters_mean"].to_numpy()
         err_clusters = data["n_clusters_std"].to_numpy()
 
         axes[0].plot(x, y_clusters, marker="o", color=color, label=dataset)
-        # Trục y dạng log nên chặn dưới ở 1 cụm
         axes[0].fill_between(
             x,
             np.maximum(y_clusters - err_clusters, 1),
@@ -183,20 +142,16 @@ def plot_results(summary, output_path):
             color=color,
             alpha=0.15,
         )
-        # Số cụm thật của bộ dữ liệu
         axes[0].axhline(
             data["n_true_clusters"].iloc[0],
             color=color,
             linestyle=":",
             linewidth=1,
         )
-
-        # ARI trung bình ± độ lệch chuẩn
         y_ari = data["ari_mean"].to_numpy()
         err_ari = data["ari_std"].to_numpy()
 
         axes[1].plot(x, y_ari, marker="o", color=color, label=dataset)
-        # ARI không vượt quá 1; phía dưới chặn ở 0 cho dễ đọc
         axes[1].fill_between(
             x,
             np.clip(y_ari - err_ari, 0, 1),
@@ -224,7 +179,6 @@ def plot_results(summary, output_path):
     axes[1].set_ylabel("ARI")
     axes[1].set_ylim(-0.02, 1.02)
 
-    # Tránh lặp nhãn alpha=1 trong chú giải
     for ax in axes:
         handles, labels = ax.get_legend_handles_labels()
         unique = dict(zip(labels, handles))
@@ -257,10 +211,8 @@ def main():
 
     all_runs = []
 
-    # BỔ SUNG: giữ 15 alpha ban đầu và thêm alpha = 1.0
     alphas_to_run = sorted(set(ALPHAS.tolist() + [1.0]))
 
-    # Sửa tổng số lần chạy để tính đủ 16 alpha
     total = len(DATASETS) * len(seeds) * len(alphas_to_run)
     current = 0
 

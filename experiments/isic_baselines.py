@@ -1,17 +1,3 @@
-"""Baseline phân đoạn cho E5: Otsu, K-Means, GMM.
-
-Người phụ trách: B  ·  Branch: isic-baselines
-
-Mỗi hàm trả về nhãn cụm cho từng pixel, dạng ndarray (H*W,) theo thứ tự hàng-trước, giống
-MeanShiftCustom.labels_, để đưa chung vào isic_utils.labels_to_mask:
-
-    rgb, gt = load_image(image_id)
-    X = features(rgb, "lab3")
-    pred = labels_to_mask(kmeans_labels(X), rgb)
-
-Kiểm tra nhanh trên vài ảnh tune (in Dice từng phương pháp):
-    python3 experiments/isic_baselines.py [--n 10]
-"""
 import argparse
 
 import numpy as np
@@ -23,10 +9,6 @@ from isic_utils import to_lab
 
 
 def otsu_labels(rgb):
-    """Ngưỡng Otsu trên kênh L (Lab). Nhãn 1 = sáng hơn ngưỡng, 0 = tối hơn hoặc bằng.
-
-    Ảnh có L không đổi thì trả về toàn nhãn 0.
-    """
     lightness = to_lab(rgb)[..., 0].ravel()
     if lightness.max() == lightness.min():
         return np.zeros(lightness.size, dtype=int)
@@ -34,17 +16,14 @@ def otsu_labels(rgb):
 
 
 def kmeans_labels(feat, k=2):
-    """K-Means k cụm trên ma trận đặc trưng (H*W, d); random_state=0, n_init=10."""
     return KMeans(n_clusters=k, n_init=10, random_state=0).fit_predict(feat)
 
 
 def gmm_labels(feat, k=2):
-    """Gaussian Mixture k thành phần (hiệp phương sai đầy đủ) trên (H*W, d); random_state=0."""
     return GaussianMixture(n_components=k, covariance_type="full", random_state=0).fit_predict(feat)
 
 
 def _check(n_images):
-    """In Dice của 3 baseline (đặc trưng 3D Lab) trên vài ảnh tune."""
     from isic_utils import dice, features, labels_to_mask, load_image, load_split
 
     methods = {

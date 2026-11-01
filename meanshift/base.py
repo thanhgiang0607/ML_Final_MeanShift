@@ -1,4 +1,3 @@
-"""Lớp cơ sở cho các thuật toán phân cụm (API giống scikit-learn)."""
 import inspect
 
 import numpy as np
@@ -46,7 +45,6 @@ class BaseClusterer:
 
 
 def check_array(X):
-    """Chuyển X thành mảng float64 2D, kiểm tra không rỗng và không có NaN/inf."""
     X = np.asarray(X, dtype=np.float64)
     if X.ndim != 2:
         raise ValueError(f"X phải là mảng 2D, nhận được ndim={X.ndim}.")

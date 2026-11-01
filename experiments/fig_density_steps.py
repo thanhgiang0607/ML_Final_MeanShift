@@ -1,11 +1,3 @@
-"""Hình mật độ theo từng bước dịch chuyển (blobs, seed 0) cho báo cáo, vẽ lại từ kết quả E1.
-
-Đọc results/e1/e1_density_steps.csv (sinh bởi e1_compare_sklearn.py): 1 điểm xuất phát X[0],
-h = 0.5 × estimate_bandwidth(X, quantile=0.3), mật độ tính tại từng điểm trên quỹ đạo.
-Nhân phẳng tăng theo mật độ nhân Epanechnikov; nhân Gauss tăng theo mật độ KDE Gauss.
-
-Chạy: python3 experiments/fig_density_steps.py  ->  report/figures/density_steps.png
-"""
 import matplotlib
 
 matplotlib.use("Agg")

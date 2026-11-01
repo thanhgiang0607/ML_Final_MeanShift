@@ -1,7 +1,3 @@
-"""Test cho meanshift/seeding.py — người phụ trách: D.
-
-Đây là vài test MẪU để bắt đầu; D bổ sung thêm test của mình.
-"""
 import warnings
 from pathlib import Path
 
@@ -22,7 +18,6 @@ def sort_rows(a):
 
 
 def load_synthetic(name, seed):
-    """Đọc data/synthetic/<name>_seed<seed>.csv (cột x, y, label); bỏ qua nếu chưa sinh."""
     path = SYNTHETIC / f"{name}_seed{seed}.csv"
     if not path.exists():
         pytest.skip("Chưa có dữ liệu: chạy `python3 data/make_synthetic.py`")
@@ -42,8 +37,6 @@ def test_bin_size_zero_returns_X():
     np.testing.assert_array_equal(get_bin_seeds(X, 0), X)
 
 
-# ---- Bổ sung của D ----------------------------------------------------------
-
 @pytest.mark.parametrize("min_bin_freq", [1, 3, 10])
 @pytest.mark.parametrize("bin_size", [0.5, 1.0, 2.0])
 def test_matches_sklearn_grid(bin_size, min_bin_freq):
@@ -62,8 +55,8 @@ def test_seeds_are_float32_cells_times_bin_size():
 
 
 def test_min_bin_freq_filters_sparse_cells():
-    X = np.array([[0.0, 0.0], [0.1, 0.1], [0.2, -0.1],   # 3 điểm cùng ô (0, 0)
-                  [5.0, 5.0]])                            # 1 điểm lẻ ô (5, 5)
+    X = np.array([[0.0, 0.0], [0.1, 0.1], [0.2, -0.1],
+                  [5.0, 5.0]])
     np.testing.assert_allclose(get_bin_seeds(X, 1.0, min_bin_freq=2), [[0.0, 0.0]])
     np.testing.assert_allclose(
         sort_rows(get_bin_seeds(X, 1.0, min_bin_freq=1)), [[0.0, 0.0], [5.0, 5.0]]
@@ -90,19 +83,14 @@ def test_no_warning_when_binning_reduces():
         get_bin_seeds(X, 1.0)
 
 
-# ---- Không còn ô nào đạt min_bin_freq (mục 2) ---------------------------------
-
 def test_min_bin_freq_too_large_gives_empty_seeds():
     X, _ = make_blobs(n_samples=100, centers=3, random_state=0)
     ours = get_bin_seeds(X, 1.0, min_bin_freq=10_000)
     theirs = sk_get_bin_seeds(X, 1.0, min_bin_freq=10_000)
     assert ours.size == theirs.size == 0
     assert ours.dtype == theirs.dtype == np.float32
-    # Khác sklearn có chủ ý: giữ shape (0, d) đúng chữ ký (m, d); sklearn trả (0,).
     assert ours.shape == (0, X.shape[1])
 
-
-# ---- Trường hợp biên (mục 3) -------------------------------------------------
 
 def test_single_point_matches_sklearn():
     X = np.array([[1.0, 2.0]])
@@ -122,14 +110,11 @@ def test_duplicate_points_collapse_to_one_cell():
 
 
 def test_negative_and_tie_coordinates_match_sklearn():
-    # 0.5, 1.5, -0.5 nằm đúng nửa ô: np.round làm tròn về số chẵn, phải giống sklearn.
     X = np.array([[0.5, 0.5], [1.5, 1.5], [-0.5, -0.5], [2.5, -1.5], [-2.5, 2.5], [9.0, 9.0]])
     np.testing.assert_allclose(
         sort_rows(get_bin_seeds(X, 1.0)), sort_rows(sk_get_bin_seeds(X, 1.0))
     )
 
-
-# ---- Nhiều chiều (mục 1) -----------------------------------------------------
 
 @pytest.mark.parametrize("d", [1, 3, 5])
 def test_other_dimensions_match_sklearn(d):
@@ -140,21 +125,16 @@ def test_other_dimensions_match_sklearn(d):
     np.testing.assert_allclose(sort_rows(ours), sort_rows(theirs))
 
 
-# ---- Đầu vào dạng list (mục 4) -----------------------------------------------
-
 def test_list_input_equals_array_input():
     X, _ = make_blobs(n_samples=100, centers=3, random_state=2)
     np.testing.assert_array_equal(get_bin_seeds(X.tolist(), 1.0), get_bin_seeds(X, 1.0))
 
-
-# ---- Dữ liệu giả của repo (data/synthetic/*.csv) ----------------------------
 
 @pytest.mark.parametrize("min_bin_freq", [1, 5])
 @pytest.mark.parametrize("seed", [0, 1, 2])
 @pytest.mark.parametrize("name", NAMES)
 def test_synthetic_matches_sklearn(name, seed, min_bin_freq):
     X = load_synthetic(name, seed)
-    # Dùng bin_size = băng thông, đúng cách get_bin_seeds được dùng trong Mean Shift.
     h = sk_estimate_bandwidth(X)
     ours = get_bin_seeds(X, h, min_bin_freq)
     theirs = sk_get_bin_seeds(X, h, min_bin_freq)

@@ -1,7 +1,3 @@
-"""Test cho experiments/isic_utils.py — người phụ trách: A.
-
-Dùng ảnh tổng hợp nhỏ nên không cần tải ISIC; test đọc ảnh thật tự bỏ qua nếu chưa tải.
-"""
 import sys
 from pathlib import Path
 
@@ -10,12 +6,11 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "experiments"))
 
-import isic_utils  # noqa: E402
-from isic_utils import border_ring, dice, features, iou, labels_to_mask, load_image, load_split, to_lab  # noqa: E402
+import isic_utils
+from isic_utils import border_ring, dice, features, iou, labels_to_mask, load_image, load_split, to_lab
 
 
 def disk_image(h=60, w=80, radius=15):
-    """Ảnh da sáng có một đĩa tối ở giữa; trả về (rgb, mask đĩa)."""
     yy, xx = np.mgrid[0:h, 0:w]
     disk = (yy - h / 2) ** 2 + (xx - w / 2) ** 2 <= radius ** 2
     rgb = np.full((h, w, 3), (230, 200, 180), dtype=np.uint8)
@@ -51,7 +46,6 @@ def test_features_lab5_scaling():
     rgb, _ = disk_image(h=4, w=5)
     X = features(rgb, "lab5", hs=2, hr=4)
     assert X.shape == (20, 5)
-    # Pixel thứ 7 theo thứ tự hàng-trước: hàng 1, cột 2 -> (x, y) = (2, 1)
     np.testing.assert_allclose(X[7, :2], [2 / 2, 1 / 2])
     np.testing.assert_allclose(X[:, 2:], to_lab(rgb).reshape(-1, 3) / 4)
 
@@ -70,7 +64,7 @@ def test_features_unknown_mode():
 
 
 def test_border_ring_width():
-    ring = border_ring((40, 60), width=0.05)  # 0.05 × 40 = 2 pixel
+    ring = border_ring((40, 60), width=0.05)
     assert ring[:2].all() and ring[-2:].all() and ring[:, :2].all() and ring[:, -2:].all()
     assert not ring[2:-2, 2:-2].any()
 
@@ -90,10 +84,8 @@ def test_labels_to_mask_label_values_do_not_matter():
 def test_labels_to_mask_skips_dark_border_and_tiny_clusters():
     rgb, disk = disk_image()
     labels = disk.astype(int)
-    # Góc tối (giống viền ống kính): nằm trọn trên viền
     rgb[:3, :3] = (0, 0, 0)
     labels[:3, :3] = 2
-    # Đốm tối rất nhỏ ở giữa ảnh (< 1% diện tích)
     rgb[10, 10] = (0, 0, 0)
     labels[10, 10] = 3
     np.testing.assert_array_equal(labels_to_mask(labels.ravel(), rgb), disk)
@@ -102,8 +94,8 @@ def test_labels_to_mask_skips_dark_border_and_tiny_clusters():
 def test_labels_to_mask_fills_holes_and_keeps_largest_component():
     rgb, disk = disk_image()
     labels = disk.astype(int)
-    labels[30, 40] = 0                 # lỗ bên trong tổn thương
-    labels[50:53, 70:73] = 1           # đốm cùng cụm nhưng tách rời
+    labels[30, 40] = 0
+    labels[50:53, 70:73] = 1
     rgb[50:53, 70:73] = (90, 50, 30)
     mask = labels_to_mask(labels.ravel(), rgb)
     np.testing.assert_array_equal(mask, disk)
@@ -111,7 +103,7 @@ def test_labels_to_mask_fills_holes_and_keeps_largest_component():
 
 def test_labels_to_mask_ignores_noise_label():
     rgb, disk = disk_image()
-    labels = np.where(disk, -1, 0).ravel()   # chỉ còn cụm da phủ viền -> không có ứng viên
+    labels = np.where(disk, -1, 0).ravel()
     assert not labels_to_mask(labels, rgb).any()
 
 

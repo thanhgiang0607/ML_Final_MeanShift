@@ -1,24 +1,3 @@
-"""E4 phần 2 – Độ nhạy của Mean-Shift theo bandwidth trên ISIC tune (3D Lab).
-
-Phần 1 (dữ liệu giả lập) nằm ở experiments/e4_bandwidth.py.
-
-100 ảnh tune, đặc trưng 3D Lab (isic_utils.features(rgb, "lab3")), MeanShiftCustom(bin_seeding=True),
-h ∈ {2, 4, 6, 8, 10, 12, 16, 20} (đơn vị Lab) + h = estimate_bandwidth của từng ảnh.
-Mask lấy bằng isic_utils.labels_to_mask (quy tắc chung với E5, E6).
-
-Chạy (cần python3 data/download_isic.py trước):
-    python3 experiments/e4_isic.py            # 100 ảnh tune, ~25 phút trên Apple M1
-    python3 experiments/e4_isic.py --quick    # 10 ảnh đầu, ghi ra thư mục tạm (không đụng results/e4/)
-
-Đầu ra (results/e4/):
-    e4_isic_runs.csv                mỗi dòng: ảnh, h, Dice, IoU, số cụm, mask rỗng, thời gian (không lên git)
-    e4_isic_summary.csv             trung bình ± std qua các ảnh theo h
-    e4_isic_h.png                   Dice/IoU, số cụm và thời gian theo h
-    e4_isic_examples.png            2 ảnh (Dice trung vị, tệ nhất), mỗi ảnh 4 mức h: ảnh gốc, cụm, mask
-    best_h_3d_lab.json              h tốt nhất cho 3D Lab (A dùng ở E5)
-    e4_isic_metadata.json           cấu hình, phiên bản thư viện, SHA256 file chia tập
-"""
-
 import argparse
 import hashlib
 import json
@@ -36,7 +15,6 @@ import pandas as pd
 import scipy
 import sklearn
 
-# Thêm thư mục gốc của project vào đường dẫn tìm kiếm module
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -45,33 +23,25 @@ from common import ROOT, timeit
 from meanshift.bandwidth import estimate_bandwidth
 from meanshift.core import MeanShiftCustom
 
-# Giống E2 và phần 1: estimate_bandwidth(X, quantile=0.3)
 QUANTILE = 0.3
 
-# ----- Phần 2: ISIC tune -----
-ISIC_HS = [2, 4, 6, 8, 10, 12, 16, 20]  # bandwidth theo đơn vị Lab
-AUTO = "auto"                           # h = estimate_bandwidth của từng ảnh
-ISIC_N_SAMPLES = 500   # estimate_bandwidth chỉ lấy mẫu 500 pixel (cả ảnh ~12.000 pixel sẽ rất chậm và tốn RAM)
-ISIC_REPEAT = 3        # số lần đo thời gian cho mỗi (ảnh, h), lấy trung vị
-QUICK_IMAGES = 10      # --quick: chỉ chạy 10 ảnh đầu của tập tune
-N_EXAMPLE_LEVELS = 4   # số mức h trong hình ví dụ
+ISIC_HS = [2, 4, 6, 8, 10, 12, 16, 20]
+AUTO = "auto"
+ISIC_N_SAMPLES = 500
+ISIC_REPEAT = 3
+QUICK_IMAGES = 10
+N_EXAMPLE_LEVELS = 4
 
 
-# =====================================================================
-# Phần 2: ISIC tune (3D Lab, bin_seeding=True)
-# =====================================================================
 def isic_settings(h_auto):
-    """Các mức h cần chạy cho một ảnh: (nhãn, h). Nhãn là "2", "4", ... hoặc "auto"."""
     return [(str(h), float(h)) for h in ISIC_HS] + [(AUTO, float(h_auto))]
 
 
 def fit_labels(X, h):
-    """Mean-Shift 3D Lab với bandwidth h (đơn vị Lab), bật bin_seeding."""
     return MeanShiftCustom(bandwidth=h, bin_seeding=True, neighbor_search="kdtree").fit(X)
 
 
 def run_isic_image(image_id, repeat=ISIC_REPEAT):
-    """Chạy mọi mức h trên một ảnh tune. Trả về list dict (mỗi mức h một dòng)."""
     from isic_utils import dice, features, iou, labels_to_mask, load_image
 
     rgb, gt = load_image(image_id)
@@ -102,7 +72,6 @@ def run_isic_image(image_id, repeat=ISIC_REPEAT):
 
 
 def summarize_isic(runs):
-    """Trung bình ± độ lệch chuẩn qua các ảnh theo mức h (các h cố định theo thứ tự tăng dần, "auto" ở cuối)."""
     summary = (
         runs.groupby("h_setting", as_index=False)
         .agg(
@@ -123,19 +92,16 @@ def summarize_isic(runs):
     std_columns = [col for col in summary.columns if col.endswith("_std")]
     summary[std_columns] = summary[std_columns].fillna(0)
 
-    # "auto" có h_mean là trung bình các h của từng ảnh -> xếp cuối
     summary["_order"] = summary["h_setting"].map(lambda s: np.inf if s == AUTO else float(s))
     return summary.sort_values("_order").drop(columns="_order").reset_index(drop=True)
 
 
 def best_fixed_h(summary):
-    """Hàng của h cố định (không tính "auto") có Dice trung bình cao nhất."""
     fixed = summary[summary["h_setting"] != AUTO]
     return fixed.loc[fixed["dice_mean"].idxmax()]
 
 
 def plot_isic_h(summary, output_path, n_images):
-    """3 hình con: Dice/IoU, số cụm, thời gian theo h. "auto" vẽ bằng đường nằm ngang."""
     fixed = summary[summary["h_setting"] != AUTO]
     auto = summary[summary["h_setting"] == AUTO].iloc[0]
     best = best_fixed_h(summary)
@@ -143,7 +109,6 @@ def plot_isic_h(summary, output_path, n_images):
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
-    # Dice, IoU
     ax = axes[0]
     ax.plot(x, fixed["dice_mean"], marker="o", color="C0", label="Dice (trung bình)")
     ax.fill_between(
@@ -165,14 +130,12 @@ def plot_isic_h(summary, output_path, n_images):
     ax.set_ylabel("Dice / IoU")
     ax.set_ylim(0, 1)
 
-    # Số cụm
     ax = axes[1]
     ax.plot(x, fixed["n_clusters_mean"], marker="o", color="C2", label="Trung bình")
     ax.plot(x, fixed["n_clusters_median"], marker="^", color="C3", linestyle="-", label="Trung vị")
     ax.axhline(auto["n_clusters_median"], color="C3", linestyle="--", linewidth=1.2,
                label=f"Trung vị, h = estimate_bandwidth ({auto['n_clusters_median']:g})")
     ax.set_yscale("log")
-    # Vạch cố định, ghi số thường (2, 5, 10 thay vì 2×10⁰); tắt nhãn vạch phụ để chữ không chồng nhau
     ax.set_yticks([1, 2, 3, 5, 10, 20, 50, 100, 200])
     ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
     ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
@@ -180,7 +143,6 @@ def plot_isic_h(summary, output_path, n_images):
     ax.set_xlabel("Bandwidth h (đơn vị Lab)")
     ax.set_ylabel("Số cụm mỗi ảnh (thang log)")
 
-    # Thời gian
     ax = axes[2]
     ax.plot(x, fixed["time_mean"], marker="o", color="C4", label="Thời gian trung bình / ảnh")
     ax.fill_between(
@@ -204,7 +166,6 @@ def plot_isic_h(summary, output_path, n_images):
 
 
 def example_levels(best_h):
-    """N_EXAMPLE_LEVELS mức h trải đều trên lưới ISIC_HS, bảo đảm có mức h tốt nhất."""
     idx = np.linspace(0, len(ISIC_HS) - 1, N_EXAMPLE_LEVELS).round().astype(int)
     levels = [ISIC_HS[i] for i in idx]
     levels[int(np.argmin([abs(v - best_h) for v in levels]))] = best_h
@@ -212,11 +173,6 @@ def example_levels(best_h):
 
 
 def plot_isic_examples(runs, best_h, output_path):
-    """Hình ví dụ: ảnh có Dice trung vị và ảnh có Dice thấp nhất (tại h tốt nhất).
-
-    Mỗi ảnh 2 hàng: hàng trên là ảnh gốc + bản đồ cụm ở từng mức h,
-    hàng dưới là mask bác sĩ + mask dự đoán (sau labels_to_mask) kèm Dice.
-    """
     from isic_utils import dice, features, labels_to_mask, load_image
 
     at_best = runs[runs["h_setting"] == f"{best_h:g}"].sort_values(["dice", "image_id"])
@@ -253,7 +209,6 @@ def plot_isic_examples(runs, best_h, output_path):
 
 
 def run_isic(quick=False):
-    """Phần 2: quét h trên ảnh tune, lưu bảng, hình và best_h_3d_lab.json."""
     from isic_utils import (BORDER_SHARE, BORDER_WIDTH, MAX_SIDE, MIN_AREA,
                             SPLITS, load_split)
 

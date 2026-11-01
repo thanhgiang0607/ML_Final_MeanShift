@@ -1,7 +1,3 @@
-"""Test cho meanshift/bandwidth.py — người phụ trách: D.
-
-Đây là vài test MẪU để bắt đầu; D bổ sung thêm test của mình.
-"""
 from pathlib import Path
 
 import numpy as np
@@ -16,7 +12,6 @@ NAMES = ["blobs", "blobs_varied", "blobs_aniso", "moons", "circles"]
 
 
 def load_synthetic(name, seed):
-    """Đọc data/synthetic/<name>_seed<seed>.csv (cột x, y, label); bỏ qua nếu chưa sinh."""
     path = SYNTHETIC / f"{name}_seed{seed}.csv"
     if not path.exists():
         pytest.skip("Chưa có dữ liệu: chạy `python3 data/make_synthetic.py`")
@@ -43,8 +38,6 @@ def test_invalid_quantile():
         estimate_bandwidth([[0.0, 0.0], [1.0, 1.0]], quantile=1.5)
 
 
-# ---- Bổ sung của D ----------------------------------------------------------
-
 @pytest.mark.parametrize("quantile", [-0.1, 1.01])
 def test_invalid_quantile_both_sides(quantile):
     with pytest.raises(ValueError):
@@ -65,7 +58,6 @@ def test_returns_float():
 
 
 def test_k_is_at_least_one():
-    # int(0.01 * 10) = 0 -> k = 1 -> láng giềng thứ 1 là chính điểm đó -> h = 0
     X = np.random.RandomState(0).randn(10, 2)
     assert estimate_bandwidth(X, quantile=0.01) == 0.0
 
@@ -91,8 +83,6 @@ def test_subsample_is_reproducible():
     b = estimate_bandwidth(X, n_samples=100, random_state=7)
     assert a == b
 
-
-# ---- Trường hợp biên (mục 3) -------------------------------------------------
 
 def test_n_samples_larger_than_n_matches_sklearn():
     X, _ = make_blobs(n_samples=50, centers=2, random_state=0)
@@ -124,22 +114,16 @@ def test_all_identical_points_give_zero():
     assert estimate_bandwidth(np.ones((20, 2))) == 0.0
 
 
-# ---- Nhiều chiều (mục 1) -----------------------------------------------------
-
 @pytest.mark.parametrize("d", [1, 3, 5])
 def test_other_dimensions_match_sklearn(d):
     X = np.random.RandomState(0).randn(120, d)
     assert estimate_bandwidth(X) == pytest.approx(sk_estimate_bandwidth(X))
 
 
-# ---- Đầu vào dạng list (mục 4) -----------------------------------------------
-
 def test_list_input_equals_array_input():
     X, _ = make_blobs(n_samples=100, centers=3, random_state=2)
     assert estimate_bandwidth(X.tolist(), quantile=0.2) == estimate_bandwidth(X, quantile=0.2)
 
-
-# ---- Dữ liệu giả của repo (data/synthetic/*.csv) ----------------------------
 
 @pytest.mark.parametrize("seed", range(10))
 @pytest.mark.parametrize("name", NAMES)

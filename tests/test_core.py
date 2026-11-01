@@ -37,7 +37,7 @@ def test_predict_matches_labels(two_blobs):
 
 
 def test_predict_before_fit_raises():
-    with pytest.raises(RuntimeError, match="chưa được fit"):  # lỗi từ _check_is_fitted()
+    with pytest.raises(RuntimeError, match="chưa được fit"):
         MeanShiftCustom().predict([[0.0, 0.0]])
 
 
@@ -70,7 +70,6 @@ def test_fitted_attributes_have_right_shape(two_blobs):
     assert ms.intensities_.shape == (k,)
     assert ms.seed_n_iter_.shape == (len(X),)
     assert ms.n_iter_ == ms.seed_n_iter_.max()
-    # Tâm mạnh nhất đứng đầu
     assert list(ms.intensities_) == sorted(ms.intensities_, reverse=True)
 
 
@@ -80,7 +79,6 @@ def test_bin_seeding_gives_two_clusters(two_blobs, search):
     ms = MeanShiftCustom(bandwidth=2.0, bin_seeding=True, neighbor_search=search).fit(X)
     assert len(ms.cluster_centers_) == 2
     assert adjusted_rand_score(y, ms.labels_) == 1.0
-    # Bin seeding dùng ít seed hơn số điểm
     assert len(ms.seed_n_iter_) < len(X)
 
 
@@ -100,11 +98,10 @@ def test_seeds_without_neighbors_raise(two_blobs):
 
 def test_cluster_all_false_marks_outlier():
     X = np.vstack([np.random.RandomState(0).normal(0, 0.3, size=(50, 2)), [[20.0, 20.0]]])
-    seeds = [[0.0, 0.0]]  # chỉ có 1 tâm ở gần gốc toạ độ
+    seeds = [[0.0, 0.0]]
     ms = MeanShiftCustom(bandwidth=2.0, seeds=seeds, cluster_all=False).fit(X)
     assert ms.labels_[-1] == -1
     assert (ms.labels_[:-1] == 0).all()
-    # cluster_all=True thì điểm xa vẫn được gán vào tâm gần nhất
     ms_all = MeanShiftCustom(bandwidth=2.0, seeds=seeds, cluster_all=True).fit(X)
     assert (ms_all.labels_ == 0).all()
 
@@ -127,9 +124,8 @@ def test_record_trajectories(two_blobs):
     ms = MeanShiftCustom(bandwidth=2.0, record_trajectories=True).fit(X)
     assert len(ms.trajectories_) == len(X)
     for i, traj in enumerate(ms.trajectories_[:10]):
-        np.testing.assert_allclose(traj[0], X[i])  # điểm đầu = seed
+        np.testing.assert_allclose(traj[0], X[i])
         assert traj.shape[1] == X.shape[1]
-    # Mặc định không lưu quỹ đạo
     assert not hasattr(MeanShiftCustom(bandwidth=2.0).fit(X), "trajectories_")
 
 

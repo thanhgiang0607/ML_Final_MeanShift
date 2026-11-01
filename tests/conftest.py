@@ -1,9 +1,3 @@
-"""Cấu hình chung cho pytest.
-
-Test nào gọi vào hàm còn là stub (raise NotImplementedError) sẽ được báo SKIPPED
-("chưa cài") thay vì FAILED, để main luôn xanh trong lúc mọi người đang code.
-Khi đã cài xong, test đó tự chạy thật.
-"""
 import pytest
 
 

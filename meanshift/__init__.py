@@ -1,4 +1,3 @@
-"""Cài đặt Mean-Shift từ đầu cho đồ án Machine Learning."""
 from .bandwidth import estimate_bandwidth
 from .core import MeanShiftCustom
 from .kernels import FlatKernel, GaussianKernel

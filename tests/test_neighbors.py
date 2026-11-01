@@ -1,7 +1,3 @@
-"""Test cho meanshift/neighbors.py — người phụ trách: C.
-
-Đây là vài test MẪU để bắt đầu; C bổ sung thêm test của mình.
-"""
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
@@ -42,26 +38,20 @@ def test_make_neighbor_search():
     assert isinstance(make_neighbor_search("kdtree"), KDTreeSearch)
     with pytest.raises(ValueError):
         make_neighbor_search("abc")
-# ---------------------------------------------------------------------------
-# Test bổ sung
-# ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize("search_cls", [BruteForceSearch, KDTreeSearch])
 def test_diem_tren_bien_voi_r_bang_dung_khoang_cach(search_cls):
-    """r = đúng khoảng cách tới một điểm -> điểm đó phải nằm trong kết quả."""
-    # Dùng tam giác 3-4-5 để khoảng cách tính ra chính xác (không có sai số làm tròn)
     X = np.array([[0.0, 0.0], [3.0, 4.0], [6.0, 8.0], [10.0, 0.0]])
     q = np.array([[0.0, 0.0]])
 
-    r = float(np.linalg.norm(X[1] - q[0]))  # đúng 5.0
+    r = float(np.linalg.norm(X[1] - q[0]))
     assert r == 5.0
 
     (idx, sq), = search_cls().fit(X).query_radius(q, r)
-    assert 1 in idx.tolist()                 # điểm nằm đúng trên biên được tính vào
-    assert set(idx.tolist()) == {0, 1}       # điểm cách 10 thì không
+    assert 1 in idx.tolist()
+    assert set(idx.tolist()) == {0, 1}
     assert_allclose(sq[np.argsort(idx)], [0.0, 25.0])
 
-    # Giảm r đi một chút thì điểm biên phải bị loại
     (idx2, _), = search_cls().fit(X).query_radius(q, r - 1e-6)
     assert set(idx2.tolist()) == {0}
 
@@ -69,10 +59,9 @@ def test_diem_tren_bien_voi_r_bang_dung_khoang_cach(search_cls):
 @pytest.mark.parametrize("chunk_size", [1, 7, 512])
 @pytest.mark.parametrize("r", [0.1, 0.4, 0.8, 1.5])
 def test_brute_va_kdtree_khop_idx_va_sq_dist(r, chunk_size):
-    """Trên dữ liệu ngẫu nhiên, hai bản cho cùng idx (cùng thứ tự) và sq_dist."""
     rng = np.random.RandomState(42)
     X = rng.randn(400, 3)
-    Q = rng.randn(50, 3)  # 50 không chia hết cho 7 -> kiểm tra lô cuối bị lẻ
+    Q = rng.randn(50, 3)
 
     brute = BruteForceSearch(chunk_size=chunk_size).fit(X).query_radius(Q, r)
     kd = KDTreeSearch().fit(X).query_radius(Q, r)
@@ -84,7 +73,6 @@ def test_brute_va_kdtree_khop_idx_va_sq_dist(r, chunk_size):
 
 
 def test_chunk_size_nho_cho_cung_ket_qua_voi_chunk_lon():
-    """Chia lô không được làm thay đổi kết quả."""
     rng = np.random.RandomState(1)
     X = rng.randn(200, 2)
     Q = rng.randn(33, 2)
@@ -101,13 +89,12 @@ def test_ten_la_bao_value_error(ten_la):
         make_neighbor_search(ten_la)
 
 def test_diem_trung_toa_do():
-    """Các điểm trùng tọa độ phải được trả về đầy đủ với bán kính r > 0."""
     X = np.array([
-        [0.0, 0.0],  # index 0
-        [1.0, 1.0],  # index 1
-        [0.0, 0.0],  # index 2: trùng index 0
+        [0.0, 0.0],
+        [1.0, 1.0],
+        [0.0, 0.0],
         [2.0, 2.0],
-        [1.0, 1.0],  # index 4: trùng index 1
+        [1.0, 1.0],
     ])
     points = np.array([[0.0, 0.0], [1.0, 1.0]])
 
@@ -133,17 +120,16 @@ def test_diem_trung_toa_do():
 
 
 def test_ban_kinh_bang_0():
-    """Bán kính bằng 0 chỉ nhận các điểm trùng tọa độ với điểm truy vấn."""
     X = np.array([
         [0.0, 0.0],
         [1.0, 0.0],
-        [0.0, 0.0],  # trùng với điểm truy vấn thứ nhất
+        [0.0, 0.0],
         [2.0, 2.0],
     ])
     points = np.array([
         [0.0, 0.0],
         [1.0, 0.0],
-        [5.0, 5.0],  # không có điểm trùng
+        [5.0, 5.0],
     ])
 
     expected_indices = [

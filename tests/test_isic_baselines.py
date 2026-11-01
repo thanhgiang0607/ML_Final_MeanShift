@@ -1,4 +1,3 @@
-"""Test cho experiments/isic_baselines.py — dùng ảnh tổng hợp, không cần tải ISIC."""
 import sys
 from pathlib import Path
 
@@ -7,12 +6,11 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "experiments"))
 
-from isic_baselines import gmm_labels, kmeans_labels, otsu_labels  # noqa: E402
-from isic_utils import features, labels_to_mask  # noqa: E402
+from isic_baselines import gmm_labels, kmeans_labels, otsu_labels
+from isic_utils import features, labels_to_mask
 
 
 def disk_image(h=60, w=80, radius=15, seed=0):
-    """Ảnh da sáng có một đĩa tối ở giữa, thêm chút nhiễu; trả về (rgb, mask đĩa)."""
     yy, xx = np.mgrid[0:h, 0:w]
     disk = (yy - h / 2) ** 2 + (xx - w / 2) ** 2 <= radius ** 2
     rgb = np.where(disk[..., None], (90, 50, 30), (230, 200, 180)).astype(float)
@@ -30,7 +28,6 @@ def test_otsu_separates_dark_disk(image):
     rgb, disk, _ = image
     labels = otsu_labels(rgb)
     assert labels.shape == (disk.size,)
-    # threshold_otsu trả về tâm của 1 trong 256 bin, nên vài pixel sát ngưỡng có thể lệch phía
     assert np.mean((labels == 0) == disk.ravel()) > 0.999
 
 

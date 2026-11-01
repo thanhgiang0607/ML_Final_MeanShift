@@ -1,11 +1,3 @@
-"""Hình quỹ đạo dịch chuyển của MeanShiftCustom trên blobs (seed 0) cho báo cáo.
-
-Cùng cấu hình với Hình 3.3 (fig_density_steps.py / E1): nhân phẳng, h = 0.5 × estimate_bandwidth(X, 0.3).
-Nền: mật độ KDE Epanechnikov cùng h — hàm mà nhân phẳng leo dốc, nên đỉnh của nó trùng tâm cụm. Vẽ quỹ đạo của N_SHOW điểm xuất phát chọn ngẫu nhiên,
-tô màu theo cụm hội tụ về; quỹ đạo của X[0] (điểm theo dõi ở Hình 3.3) được tô đậm.
-
-Chạy: python3 experiments/fig_trajectory_blobs.py  ->  report/figures/trajectory_blobs.png
-"""
 import sys
 
 import matplotlib
@@ -19,7 +11,7 @@ from sklearn.neighbors import KernelDensity
 from common import ROOT, load_synthetic
 
 sys.path.insert(0, str(ROOT))
-from meanshift import MeanShiftCustom  # noqa: E402
+from meanshift import MeanShiftCustom
 
 N_SHOW = 40
 
@@ -29,7 +21,6 @@ def main():
     h = 0.5 * estimate_bandwidth(X, quantile=0.3)
     model = MeanShiftCustom(bandwidth=h, record_trajectories=True).fit(X)
     trajectories = model.trajectories_
-    # Mỗi seed (= mỗi điểm dữ liệu) thuộc cụm của tâm gần điểm hội tụ nhất
     ends = np.array([t[-1] for t in trajectories])
     seed_cluster = np.argmin(((ends[:, None] - model.cluster_centers_[None]) ** 2).sum(-1), axis=1)
 
