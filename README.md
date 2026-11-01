@@ -19,6 +19,7 @@ Tự cài thuật toán Mean-Shift theo hướng đối tượng (chỉ dùng Nu
 │   ├── e2_compare_algorithms.py  # E2 – so với K-Means, DBSCAN, GMM
 │   ├── e3_runtime.py          #   E3 – thời gian chạy và bộ nhớ
 │   └── fig_*.py               #   Vẽ hình minh hoạ
+├── data/                      # Bản CSV của 3 bộ dữ liệu (xuất từ sklearn bằng export_datasets.py)
 ├── results/                   # Kết quả E1–E3 (hình, bảng tổng hợp, metadata)
 └── report/                    # Báo cáo E1–E3, sơ đồ luồng fit() và sơ đồ lớp UML
 ```
